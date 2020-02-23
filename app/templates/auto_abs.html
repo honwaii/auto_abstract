@@ -1,0 +1,44 @@
+  
+{% extends "layout.html" %}
+
+{% block content %}
+  <main>
+    <div class="container justify-content-center">
+      <div class="row mt-3 mx-2">
+        <h2>Auto-Abstract</h2>
+      </div>
+      <div class="row mx-2">
+        <div id="options_div" class="col py-3">
+          <div class="dropdown">
+            <label for="language_btn">Language: </label>
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="language_btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              {{current_language}}
+            </button>
+            <div class="dropdown-menu" aria-labelledby="language_btn">
+              <a class="dropdown-item" href="#">English</a>
+              <a class="dropdown-item" href="#">中文</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mx-2">
+        <div id="input_text_div" class="col">
+          <label for="input_textarea">Input</label>
+          <textarea class="form-control" id="input_textarea" rows="5"></textarea>
+        </div>
+        <div id="output_text_div" class="col">
+          <label for="output_textarea">Output</label>
+          <textarea class="form-control" id="output_textarea" rows="5"></textarea>
+        </div>
+      </div>
+      <div class="row py-3 mx-2">
+        <div id="submit_buttom_div" class="col">
+          <button type="button" class="btn btn-dark">Submit</button>
+        </div>
+        <div class="spinner-border invisible" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
