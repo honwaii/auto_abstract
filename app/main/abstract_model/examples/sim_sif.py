@@ -1,7 +1,5 @@
-import pickle, sys
-sys.path.append('../src')
-import .data_io, .sim_algo, eval, .params
-
+import pickle
+from ..src import  data_io, sim_algo, eval, params
 ## run
 wordfiles = [#'../data/paragram_sl999_small.txt', # need to download it from John Wieting's github (https://github.com/jwieting/iclr2016)
     '../data/glove.840B.300d.txt'  # need to download it first
@@ -20,10 +18,10 @@ for wordfile in wordfiles:
         word2weight = data_io.getWordWeight(weightfile, weightpara)
         weight4ind = data_io.getWeight(words, word2weight)
         for rmpc in rmpcs:
-            print 'word vectors loaded from %s' % wordfile
-            print 'word weights computed from %s using parameter a=%f' % (weightfile, weightpara)
+            print ('word vectors loaded from %s' % wordfile)
+            print( 'word weights computed from %s using parameter a=%f' % (weightfile, weightpara))
             params.rmpc = rmpc
-            print 'remove the first %d principal components' % rmpc
+            print ('remove the first %d principal components' % rmpc)
             ## eval just one example dataset
             parr, sarr = eval.sim_evaluate_one(We, words, weight4ind, sim_algo.weighted_average_sim_rmpc, params)
             ## eval all datasets; need to obtained datasets from John Wieting (https://github.com/jwieting/iclr2016)

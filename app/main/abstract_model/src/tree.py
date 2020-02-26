@@ -1,4 +1,8 @@
+import sys
+
+sys.path.append("../src")
 import data_io
+
 
 class tree(object):
 
@@ -11,7 +15,7 @@ class tree(object):
         phrase = self.phrase.lower()
         arr = phrase.split()
         for i in arr:
-            self.embeddings.append(data_io.lookupIDX(words,i))
+            self.embeddings.append(data_io.lookupIDX(words, i))
 
     def unpopulate_embeddings(self):
         self.embeddings = []

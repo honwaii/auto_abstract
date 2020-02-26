@@ -1,5 +1,5 @@
 class params(object):
-    
+
     def __init__(self):
         self.LW = 1e-5
         self.LC = 1e-5

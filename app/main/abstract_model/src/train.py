@@ -1,20 +1,20 @@
-
 import sys, os
 from time import time
 import random
 import numpy as np
 
-from params import params
+from .params import params
 import argparse
 
 from theano import config
 import lasagne
 from sklearn.decomposition import TruncatedSVD
 
-import data_io
-from proj_model_sim import proj_model_sim
-from proj_model_sentiment import proj_model_sentiment
-import eval
+from . import data_io
+from .proj_model_sim import proj_model_sim
+from .proj_model_sentiment import proj_model_sentiment
+from . import eval
+
 
 ##################################################
 def str2bool(v):
@@ -26,6 +26,7 @@ def str2bool(v):
     if v.lower() in ("no", "false", "f", "0"):
         return False
     raise ValueError('A type that was supposed to be boolean is not boolean.')
+
 
 def learner2bool(v):
     "utility function for parsing the argument for learning optimization algorithm"
@@ -46,7 +47,7 @@ def get_pc(data, We, weight4ind, params):
         n_samples = x.shape[0]
         emb = np.zeros((n_samples, We.shape[1]))
         for i in xrange(n_samples):
-            emb[i,:] = w[i,:].dot(We[x[i,:],:]) / np.count_nonzero(w[i,:])
+            emb[i, :] = w[i, :].dot(We[x[i, :], :]) / np.count_nonzero(w[i, :])
         return emb
 
     for i in data:
@@ -54,21 +55,22 @@ def get_pc(data, We, weight4ind, params):
         if not params.task == "sentiment":
             i[1].populate_embeddings(words)
     if params.task == "ent":
-        (scores,g1x,g1mask,g2x,g2mask) = data_io.getDataEntailment(data)
+        (scores, g1x, g1mask, g2x, g2mask) = data_io.getDataEntailment(data)
         if params.weightfile:
             g1mask = data_io.seq2weight(g1x, g1mask, weight4ind)
     elif params.task == "sim":
-        (scores,g1x,g1mask,g2x,g2mask) = data_io.getDataSim(data, -1)
+        (scores, g1x, g1mask, g2x, g2mask) = data_io.getDataSim(data, -1)
         if params.weightfile:
             g1mask = data_io.seq2weight(g1x, g1mask, weight4ind)
     elif params.task == "sentiment":
-        (scores,g1x,g1mask) = data_io.getDataSentiment(data)
+        (scores, g1x, g1mask) = data_io.getDataSentiment(data)
         if params.weightfile:
             g1mask = data_io.seq2weight(g1x, g1mask, weight4ind)
     emb = get_weighted_average(We, g1x, g1mask)
     svd = TruncatedSVD(n_components=params.npc, n_iter=7, random_state=0)
     svd.fit(emb)
     return svd.components_
+
 
 def train_util(model, train_data, dev, test, train, words, params):
     "utility function for training the model"
@@ -87,11 +89,11 @@ def train_util(model, train_data, dev, test, train, words, params):
                         i[1].populate_embeddings(words)
                 # load the data
                 if params.task == "ent":
-                    (scores,g1x,g1mask,g2x,g2mask) = data_io.getDataEntailment(batch)
+                    (scores, g1x, g1mask, g2x, g2mask) = data_io.getDataEntailment(batch)
                 elif params.task == "sim":
-                    (scores,g1x,g1mask,g2x,g2mask) = data_io.getDataSim(batch, model.nout)
+                    (scores, g1x, g1mask, g2x, g2mask) = data_io.getDataSim(batch, model.nout)
                 elif params.task == "sentiment":
-                    (scores,g1x,g1mask) = data_io.getDataSentiment(batch)
+                    (scores, g1x, g1mask) = data_io.getDataSentiment(batch)
                 else:
                     raise ValueError('Task should be ent or sim.')
                 # train
@@ -105,7 +107,8 @@ def train_util(model, train_data, dev, test, train, words, params):
                         g1mask = data_io.seq2weight(g1x, g1mask, params.weight4ind)
                     cost = model.train_function(scores, g1x, g1mask)
                 if np.isnan(cost) or np.isinf(cost):
-                    print 'NaN detected'
+                    print
+                    'NaN detected'
                 # undo batch to save RAM
                 for i in batch:
                     i[0].representation = None
@@ -115,23 +118,28 @@ def train_util(model, train_data, dev, test, train, words, params):
                         i[1].unpopulate_embeddings()
             # evaluate
             if params.task == "sim":
-                dp,ds = eval.supervised_evaluate(model,words,dev,params)
-                tp,ts = eval.supervised_evaluate(model,words,test,params)
-                rp,rs = eval.supervised_evaluate(model,words,train,params)
-                print "evaluation: ",dp,ds,tp,ts,rp,rs
+                dp, ds = eval.supervised_evaluate(model, words, dev, params)
+                tp, ts = eval.supervised_evaluate(model, words, test, params)
+                rp, rs = eval.supervised_evaluate(model, words, train, params)
+                print
+                "evaluation: ", dp, ds, tp, ts, rp, rs
             elif params.task == "ent" or params.task == "sentiment":
-                ds = eval.supervised_evaluate(model,words,dev,params)
-                ts = eval.supervised_evaluate(model,words,test,params)
-                rs = eval.supervised_evaluate(model,words,train,params)
-                print "evaluation: ",ds,ts,rs
+                ds = eval.supervised_evaluate(model, words, dev, params)
+                ts = eval.supervised_evaluate(model, words, test, params)
+                rs = eval.supervised_evaluate(model, words, train, params)
+                print
+                "evaluation: ", ds, ts, rs
             else:
                 raise ValueError('Task should be ent or sim.')
-            print 'Epoch ', (eidx+1), 'Cost ', cost
+            print
+            'Epoch ', (eidx + 1), 'Cost ', cost
             sys.stdout.flush()
     except KeyboardInterrupt:
-        print "Training interupted"
+        print
+        "Training interupted"
     end_time = time()
-    print "total time:", (end_time - start_time)
+    print
+    "total time:", (end_time - start_time)
 
 
 ##################################################
@@ -140,7 +148,8 @@ random.seed(1)
 np.random.seed(1)
 
 # parse arguments
-print sys.argv
+print
+sys.argv
 parser = argparse.ArgumentParser()
 parser.add_argument("-LW", help="Lambda for word embeddings (normal training).", type=float)
 parser.add_argument("-LC", help="Lambda for composition parameters (normal training).", type=float)
@@ -160,7 +169,7 @@ parser.add_argument("-nntype", help="Type of neural network.")
 parser.add_argument("-epochs", help="Number of epochs in training.", type=int)
 parser.add_argument("-minval", help="Min rating possible in scoring.", type=int)
 parser.add_argument("-maxval", help="Max rating possible in scoring.", type=int)
-parser.add_argument("-clip", help="Threshold for gradient clipping.",type=int)
+parser.add_argument("-clip", help="Threshold for gradient clipping.", type=int)
 parser.add_argument("-eta", help="Learning rate.", type=float)
 parser.add_argument("-learner", help="Either AdaGrad or Adam.")
 parser.add_argument("-task", help="Either sim, ent, or sentiment.")
@@ -211,9 +220,9 @@ if args.nonlinearity:
 # load data
 (words, We) = data_io.getWordmap(params.wordfile)
 if args.task == "sim" or args.task == "ent":
-    train_data = data_io.getSimEntDataset(params.traindata,words,params.task)
+    train_data = data_io.getSimEntDataset(params.traindata, words, params.task)
 elif args.task == "sentiment":
-    train_data = data_io.getSentimentDataset(params.traindata,words)
+    train_data = data_io.getSentimentDataset(params.traindata, words)
 else:
     raise ValueError('Task should be ent, sim, or sentiment.')
 
@@ -221,7 +230,8 @@ else:
 if params.weightfile:
     word2weight = data_io.getWordWeight(params.weightfile, params.weightpara)
     params.weight4ind = data_io.getWeight(words, word2weight)
-    print 'word weights computed using parameter a=' + str(params.weightpara)
+    print
+    'word weights computed using parameter a=' + str(params.weightpara)
 else:
     params.weight4ind = []
 if params.npc > 0:

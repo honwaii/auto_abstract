@@ -1,8 +1,12 @@
 from __future__ import print_function
+import sys
+
+sys.path.append("../src")
 
 import numpy as np
 import pickle
 from tree import tree
+import jieba
 
 
 # from theano import config
@@ -12,7 +16,7 @@ from tree import tree
 def getWordmap(textfile):
     words = {}
     We = []
-    f = open(textfile, 'r')
+    f = open(textfile, 'r', encoding='utf-8')
     lines = f.readlines()
     for (n, i) in enumerate(lines):
         i = i.split()
@@ -23,7 +27,7 @@ def getWordmap(textfile):
             j += 1
         words[i[0]] = n
         We.append(v)
-    return (words, np.array(We))
+    return words, np.array(We, dtype='float32')
 
 
 # list_of_seqs: [[每句话中每个词的索引值列表]]
@@ -34,7 +38,7 @@ def prepare_data(list_of_seqs):
     x = np.zeros((n_samples, maxlen)).astype('int32')
     x_mask = np.zeros((n_samples, maxlen)).astype('float32')
     for idx, s in enumerate(list_of_seqs):
-        # TODO x 和 x_mask的作用及对应的值？？ 注意调用该函数的注释
+        # TODO x 和 x_mask的作用及对应的值？？ 注意调用该函数的注释  (mask 表示所在位置是否有一个词)
         x[idx, :lengths[idx]] = s
         x_mask[idx, :lengths[idx]] = 1.
     x_mask = np.asarray(x_mask, dtype='float32')
@@ -56,7 +60,8 @@ def lookupIDX(words, w):
 
 
 def getSeq(p1, words):
-    p1 = p1.split()
+    # p1 = p1.split()
+    p1 = list(jieba.cut(p1))
     X1 = []
     for i in p1:
         X1.append(lookupIDX(words, i))
@@ -304,7 +309,7 @@ def getWordWeight(weightfile, a=1e-3):
         a = 1.0
 
     word2weight = {}
-    with open(weightfile) as f:
+    with open(weightfile, encoding='utf-8') as f:
         lines = f.readlines()
     N = 0
     for i in lines:
@@ -316,7 +321,7 @@ def getWordWeight(weightfile, a=1e-3):
                 N += float(i[1])
             else:
                 print(i)
-    for key, value in word2weight.iteritems():
+    for key, value in word2weight.items():
         word2weight[key] = a / (a + value / N)
     return word2weight
 
@@ -324,7 +329,7 @@ def getWordWeight(weightfile, a=1e-3):
 # 给定的几个词，返回这几个词的对应的权重 { 词 : 权重}
 def getWeight(words, word2weight):
     weight4ind = {}
-    for word, ind in words.iteritems():
+    for word, ind in words.items():
         if word in word2weight:
             weight4ind[ind] = word2weight[word]
         else:
@@ -334,9 +339,10 @@ def getWeight(words, word2weight):
 
 def seq2weight(seq, mask, weight4ind):
     weight = np.zeros(seq.shape).astype('float32')
-    for i in xrange(seq.shape[0]):
-        for j in xrange(seq.shape[1]):
+    for i in range(seq.shape[0]):
+        for j in range(seq.shape[1]):
             if mask[i, j] > 0 and seq[i, j] >= 0:
+                print(mask[i, j])
                 weight[i, j] = weight4ind[seq[i, j]]
     weight = np.asarray(weight, dtype='float32')
     return weight
@@ -396,17 +402,17 @@ def getIDFWeight(wordfile, save_file=''):
         g1x, g1mask, g2x, g2mask = getDataFromFile(prefix + f, words)
         dlen += g1x.shape[0]
         dlen += g2x.shape[0]
-        for i in xrange(g1x.shape[0]):
-            for j in xrange(g1x.shape[1]):
+        for i in range(g1x.shape[0]):
+            for j in range(g1x.shape[1]):
                 if g1mask[i, j] > 0:
                     df[g1x[i, j]] += 1
-        for i in xrange(g2x.shape[0]):
-            for j in xrange(g2x.shape[1]):
+        for i in range(g2x.shape[0]):
+            for j in range(g2x.shape[1]):
                 if g2mask[i, j] > 0:
                     df[g2x[i, j]] += 1
 
     weight4ind = {}
-    for i in xrange(len(df)):
+    for i in range(len(df)):
         weight4ind[i] = np.log2((dlen + 2.0) / (1.0 + df[i]))
     if save_file:
         pickle.dump(weight4ind, open(save_file, 'w'))

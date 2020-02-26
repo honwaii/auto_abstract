@@ -1,7 +1,8 @@
 import numpy as np
-import SIF_embedding
+from .SIF_embedding import SIF_embedding
 
-def weighted_average_sim_rmpc(We,x1,x2,w1,w2, params):
+
+def weighted_average_sim_rmpc(We, x1, x2, w1, w2, params):
     """
     Compute the scores between pairs of sentences using weighted average + removing the projection on the first principal component
     :param We: We[i,:] is the vector for word i
