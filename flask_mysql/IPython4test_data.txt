@@ -1,0 +1,12 @@
+import requests
+r = requests.get("http://127.0.0.1:5000/user/user1")
+r.text
+r
+r.status_code
+r = requests.post("http://127.0.0.1:5000/user/user1")
+r.text
+url = "http://127.0.0.1:5000/data"
+import json
+data = json.dumps({"dataa":123, "datab":"xxx"})
+requests.get(url, data=data)
+requests.get(url, data=data, cookies={"token":"tokenxxx"})
