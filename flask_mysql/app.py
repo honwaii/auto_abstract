@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request
 import json
 from flask_mysql import db
+from jinja2 import Markup
+
 app = Flask(__name__)
 
 
@@ -118,6 +120,13 @@ def show_user(user_id):
     data = db.query_data(sql)
     user = data[0]
     return render_template("show_user.html", user=user)
+
+
+@app.route("/show_echarts")
+def show_echarts():
+    xdata = ["衬衫","羊毛衫","雪纺衫","裤子","高跟鞋","袜子"]
+    ydata = [5, 20, 36, 10, 10, 20]
+    return render_template("show_echarts.html", xdata=Markup(json.dumps(xdata)), ydata=Markup(json.dumps(ydata)))
 
 
 if __name__ == '__main__':
