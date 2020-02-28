@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request
 import json
+
+from pyecharts.charts import Bar
+
 from flask_mysql import db
 from jinja2 import Markup
 
@@ -127,6 +130,16 @@ def show_echarts():
     xdata = ["衬衫","羊毛衫","雪纺衫","裤子","高跟鞋","袜子"]
     ydata = [5, 20, 36, 10, 10, 20]
     return render_template("show_echarts.html", xdata=Markup(json.dumps(xdata)), ydata=Markup(json.dumps(ydata)))
+
+
+@app.route("/show_pyecharts")
+def show_pyecharts():
+    bar = (
+        Bar()
+            .add_xaxis(["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"])
+            .add_yaxis("商家A", [5, 20, 36, 10, 75, 90])
+    )
+    return render_template("show_pyecharts.html", bar_options=bar.dump_options())
 
 
 if __name__ == '__main__':
