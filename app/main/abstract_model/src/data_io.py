@@ -1,12 +1,9 @@
 from __future__ import print_function
-import sys
 
-sys.path.append("../src")
-
+from app.main.abstract_model.src import tree
+import jieba
 import numpy as np
 import pickle
-from tree import tree
-import jieba
 
 
 # from theano import config

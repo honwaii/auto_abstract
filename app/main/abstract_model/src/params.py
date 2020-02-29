@@ -9,3 +9,6 @@ class params(object):
         t = "LW", self.LW, ", LC", self.LC, ", eta", self.eta
         t = map(str, t)
         return ' '.join(t)
+
+
+params = params()

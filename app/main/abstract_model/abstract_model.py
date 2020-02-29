@@ -1,11 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import jieba
-import sys
-from configparser import ConfigParser
-
-sys.path.append("./src")
-import data_io, params, SIF_embedding
+from app.main.abstract_model.src import data_io, SIF_embedding, params
+from app.main.abstract_model.src.params import params
 
 
 def get_sif_embedding():
@@ -30,34 +26,11 @@ def get_sif_embedding():
     w = data_io.seq2weight(x, m, weight4ind)  # get word weights
 
     # set parameters
-    params = params.params()
     params.rmpc = rmpc
 
     # get SIF embedding
     embedding = SIF_embedding.SIF_embedding(We, x, w, params)  # embedding[i,:] is the embedding for sentence i
     return embedding
-
-
-def config_read_test():
-    # 初始化类
-    cp = ConfigParser()
-    cp.read("../../configuration.cfg")
-    print(cp)
-    # 得到所有的section，以列表的形式返回
-    section = cp.sections()[0]
-    print(section)
-
-    # 得到该section的所有option
-    print(cp.options(section))
-
-    # 得到该section的所有键值对
-    print(cp.items(section))
-
-    # 得到该section中的option的值，返回为string类型
-    print(cp.get(section, "db"))
-
-    # 得到该section中的option的值，返回为int类型
-    print(cp.getint(section, "port"))
 
 
 get_sif_embedding()
