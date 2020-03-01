@@ -1,12 +1,9 @@
 from __future__ import print_function
-import sys
 
-sys.path.append("../src")
-
+from app.main.abstract_model.src import tree
+import jieba
 import numpy as np
 import pickle
-from tree import tree
-import jieba
 
 
 # from theano import config
@@ -35,7 +32,7 @@ def prepare_data(list_of_seqs):
     lengths = [len(s) for s in list_of_seqs]  # 每句话的词数
     n_samples = len(list_of_seqs)  # 句子数量
     maxlen = np.max(lengths)
-    x = np.zeros((n_samples, maxlen)).astype('int32')
+    x = np.zeros((n_samples, maxlen),dtype='float32').astype('int32')
     x_mask = np.zeros((n_samples, maxlen)).astype('float32')
     for idx, s in enumerate(list_of_seqs):
         # TODO x 和 x_mask的作用及对应的值？？ 注意调用该函数的注释  (mask 表示所在位置是否有一个词)
@@ -342,7 +339,6 @@ def seq2weight(seq, mask, weight4ind):
     for i in range(seq.shape[0]):
         for j in range(seq.shape[1]):
             if mask[i, j] > 0 and seq[i, j] >= 0:
-                print(mask[i, j])
                 weight[i, j] = weight4ind[seq[i, j]]
     weight = np.asarray(weight, dtype='float32')
     return weight

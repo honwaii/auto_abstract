@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # @Author : bamtercelboo
 # @Datetime : 2018/4/29 15:23
 # @File : clean_corpus.py
@@ -11,7 +12,6 @@
 import sys
 import os
 from optparse import OptionParser
-
 
 class Clean(object):
     def __init__(self, infile, outfile):
@@ -58,7 +58,6 @@ class Clean(object):
         print("writing finished")
 
     def is_chinese(self, uchar):
-        """判断一个unicode是否是汉字"""
         if (uchar >= u'\u4e00') and (uchar <= u'\u9fa5'):
             return True
         else:
