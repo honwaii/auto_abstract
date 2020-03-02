@@ -37,13 +37,12 @@ def test_data():
     # print(request.args.get("a"), request.args.get("b"))
     # print(request.headers)
     # print(request.headers.get("User-Agent"))
-    # print(request.data)
-    # import json
-    # print(json.loads(request.data))
+    #print(request.data)
+    #print(json.loads(request.data))
     # print(request.cookies)
     # print(request.cookies.get("token"))
-    print(request.form)
-    print(request.form.get("username"), request.form.get("password"))
+    #print(request.form)
+    #print(request.form.get("username"), request.form.get("password"))
     return 'success'
 
 
@@ -79,19 +78,18 @@ def read_pvuv_data():
 def pvuv():
     # read file
     data = read_pvuv_data()
-    for datum in data:
-        pdate = datum[0]
-        pv = datum[1]
-        uv = datum[2]
-        sql = f"""
-        insert
-        into
-        pvuv(pdate, pv, uv)
-        values('{pdate}', '{pv}', '{uv}')
-        """
-        print(sql)
-        db.insert_or_update_data(sql)
-    # return html
+    # for datum in data:
+    #     pdate = datum[0]
+    #     pv = datum[1]
+    #     uv = datum[2]
+    #     sql = f"""
+    #     insert
+    #     into
+    #     pvuv(pdate, pv, uv)
+    #     values('{pdate}', '{pv}', '{uv}')
+    #     """
+    #     print(sql)
+    #     db.insert_or_update_data(sql)
     return render_template("pvuv.html", data=data)
 
 
