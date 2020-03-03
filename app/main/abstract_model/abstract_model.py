@@ -3,6 +3,7 @@
 import sys
 from functools import reduce
 import pandas as pd
+import re
 
 sys.path.append("./src")
 from app.main.abstract_model.src import data_io, SIF_embedding, params
@@ -20,6 +21,7 @@ def get_sif_embedding():
     rmpc = 1  # number of principal components to remove in SIF weighting scheme
     # sentences = ['this is an example sentence', 'this is another sentence that is slightly longer']
     sentences = get_sentences()
+    # sentences = ["我喜欢你。", "你是一只小毛驴。"]
 
     # load word vectors 1. 加载词向量文件
     print("1. 加载词向量文件")
@@ -50,7 +52,7 @@ def get_sif_embedding():
 
 def get_sentences():
     # 0. 从文件读取句子
-    # Columns: [id, author, source, content, feature, title, url]
+    # Columns: [id, author, result, content, feature, title, url]
     path = configuration.get_config('sentences_path')
     content = pd.read_csv(path, encoding='gb18030', usecols=['content'], iterator=True)
     index = 0
@@ -62,8 +64,14 @@ def get_sentences():
             chunk = content.get_chunk(chunk_size)
             start_index = index * chunk_size
             for i in range(chunk.size):
-                chunks.append(chunk.at[start_index + i, "content"])
+                essay = chunk.at[start_index + i, "content"]
+                # chunks.append(chunk.at[start_index + i, "content"])
+                if isinstance(essay, str):
+                    sentences = cut_sentences(essay)
+                    save_sentence(sentences)
             index += 1
+            # if index == 3:
+            #     break
         except StopIteration:
             print("read finish.")
             loop = False
@@ -90,5 +98,29 @@ def save_sentences_embedding(sentences: list, embedding: list):
     return
 
 
-s, em = get_sif_embedding()
-save_sentences_embedding(s, em)
+def cut_sentences(contents: str):
+    contents = contents.replace("\n", "").strip()
+    regex = r"[？！。?!【】,，]"
+    sentences_list = re.split(regex, contents)
+    sentences = []
+    for s in sentences_list:
+        sen_1 = re.subn(r"@(.*)：", "", s)[0].strip()
+        sen_2 = re.subn(r"\s", "", sen_1)[0].strip()
+        sen = re.subn(r"(（.*）)", "", sen_2)[0].strip()
+        # mini_sens = sen.split("，")
+        # sentences += mini_sens
+        sentences.append(sen + "\n")
+    return sentences
+
+
+def save_sentence(sentences: list):
+    path = configuration.get_config("processed_sentences")
+    output = open(path, 'a+', encoding='utf-8')
+    output.writelines(sentences)
+    output.write("\n")
+    output.close()
+
+
+get_sentences()
+# s, em = get_sif_embedding()
+# save_sentences_embedding(s, em)
