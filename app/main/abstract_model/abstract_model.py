@@ -1,18 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import re
-
+import gensim
 import pandas as pd
 import numpy as np
 import linecache
 from typing import List
 from functools import reduce
+from gensim.models.word2vec import Word2Vec
 from sklearn.decomposition import PCA
 from app.main.abstract_model.domain.word import Word
 from app.main.abstract_model.src.params import params
 from app.main.common.cfg_operator import configuration
 from app.main.abstract_model.domain.sentence import Sentence
 from app.main.abstract_model.src import data_io, SIF_embedding, params
+
+
+def load_word_vector_model():
+    word_vector_model_path = configuration.get_config('word_vector_model_path')
+    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    return model
+
+
+def get_word_vector(word: str, embedding_size: int, word_vector_model: Word2Vec):
+    try:
+        word_vector = word_vector_model[word]
+    except KeyError:
+        word_vector = np.zeros(embedding_size)
+    return word_vector
 
 
 def get_sif_embedding():
@@ -26,6 +41,7 @@ def get_sif_embedding():
     # sentences = ['this is an example sentence', 'this is another sentence that is slightly longer']
     sentences = get_sentences(0, 100, True)
     # save_sentence(sentences)
+
     # load word vectors 1. 加载词向量文件
     print("1. 加载词向量文件")
     (words, We) = data_io.getWordmap(word_file)
@@ -96,8 +112,8 @@ def handle_essay2sentences():
                     sentences = cut_sentences(essay)
                     save_sentence(sentences)
             index += 1
-            # if index == 2:
-            #     break
+            if index == 2:
+                break
         except StopIteration:
             print("read finish.")
             loop = False
@@ -151,23 +167,20 @@ def save_sentence(sentences: list):
     output.close()
 
 
-def get_word_frequency(word_text, looktable):
-    if word_text in looktable:
-        return looktable[word_text]
+def get_word_frequency(word_text, look_table):
+    if word_text in look_table:
+        return look_table[word_text]
     else:
         return 1.0
 
 
-# embedding_size = 300
-
-
-def sentence_to_vec(sentence_list: List[Sentence], embedding_size, looktable, a=1e-3):
+def sentence_to_vec(sentence_list: List[Sentence], embedding_size: int, look_table: dict, a=1e-3):
     sentence_set = []
     for sentence in sentence_list:
         vs = np.zeros(embedding_size)  # add all word2vec values into one vector for the sentence
         sentence_length = sentence.len()
         for word in sentence.word_list:
-            a_value = a / (a + get_word_frequency(word.text, looktable))  # smooth inverse frequency, SIF
+            a_value = a / (a + get_word_frequency(word.text, look_table))  # smooth inverse frequency, SIF
             vs = np.add(vs, np.multiply(a_value, word.vector))  # vs += sif * word_vector
         vs = np.divide(vs, sentence_length)  # weighted average
         sentence_set.append(vs)  # add to our existing re-calculated set of sentences
@@ -192,6 +205,49 @@ def sentence_to_vec(sentence_list: List[Sentence], embedding_size, looktable, a=
     return sentence_vecs
 
 
-handle_essay2sentences()
-s, em = get_sif_embedding()
-save_sentences_embedding(s, em)
+def get_all_sentences(sentences: list, embedding_size: int, word_vector_model: Word2Vec):
+    sentence_list = []
+    for sentence in sentences:
+        word_list = []
+        for word in sentence:
+            vector = get_word_vector(word, embedding_size, word_vector_model)
+            word_list.append(Word(word, vector))
+        if len(word_list) > 0:  # did we find any words (not an empty set)
+            sentence_list.append(Sentence(word_list))
+    return sentence_list
+
+
+def get_sentences_vector():
+    model = load_word_vector_model()
+    sentences = get_sentences(0, 100, True)
+    split_sentences_list = get_all_sentences(sentences, 100, model)
+    word_frequency_dict = get_words_frequency_dict()
+    sentence_vecs = sentence_to_vec(split_sentences_list, 100, word_frequency_dict)
+    return sentence_vecs
+
+
+def get_words_frequency_dict():
+    frequency_file = configuration.get_config('frequency_file')
+    word2weight = {}
+    with open(frequency_file, encoding='utf-8') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if len(line) <= 0:
+            continue
+        line = line.split()
+        if len(line) == 2:
+            word2weight[line[0]] = float(line[1])
+        else:
+            print(line)
+    return word2weight
+
+
+# embedding_size = 100
+# handle_essay2sentences()
+# s, em = get_sif_embedding()
+# save_sentences_embedding(s, em)
+# model = load_word_vector_model()
+
+t = get_sentences_vector()
+print(t)
