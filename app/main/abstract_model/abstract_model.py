@@ -27,8 +27,8 @@ from gensim.scripts.glove2word2vec import glove2word2vec
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    model = KeyedVectors.load_word2vec_format(word_vector_model_path)
-    # model = gensim.models.Word2Vec.load(word_vector_model_path)
+    # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
+    model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
 
