@@ -228,9 +228,10 @@ def get_all_sentences(sentences: list, embedding_size: int, word_vector_model: W
     return sentence_list
 
 
-def get_sentences_vector():
+def get_sentences_vector(contents: str):
     model = load_word_vector_model()
-    sentences = get_sentences(0, 300, True)
+    # sentences = get_sentences(0, 300, True)
+    sentences = get_content_sentences(contents)
     split_sentences_list = get_all_sentences(sentences, embedding_size, model)
     word_frequency_dict = get_words_frequency_dict()
     sentence_vectors = sentence_to_vec(split_sentences_list, embedding_size, word_frequency_dict)
@@ -312,14 +313,32 @@ def knn_smooth():
     return
 
 
+def get_content_sentences(contents: str):
+    contents = contents.replace("\n", "").strip()
+    contents = contents.replace("\t", "").strip()
+    contents = contents.replace("\r", "").strip()
+    regex = r"[？！。?!【】,，;；……]"
+    sentences_list = re.split(regex, contents)
+    sentences = []
+    for index in range(len(sentences_list)):
+        s = sentences_list[index]
+        sen_1 = re.subn(r"@(.*)：", "", s)[0].strip()
+        sen_2 = re.subn(r"\s", "", sen_1)[0].strip()
+        sen = re.subn(r"(（.*）)", "", sen_2)[0].strip()
+        if len(sen) <= 1 or len(sen.strip()) <= 1:
+            continue
+        sentences.append(sen)
+    return sentences
+
+
 def test():
     with open("./data/new.txt", encoding='utf-8') as file:
-        content = str(file.readlines()).replace("\n", "")
+        contents = str(file.readlines()).replace("\n", "")
         file.close()
         print('compute sentences vector')
-        sentence_vectors_lookup = get_sentences_vector()
+        sentence_vectors_lookup = get_sentences_vector(contents)
         print('compute content vector.')
-        content_vector = get_content_vector(content)
+        content_vector = get_content_vector(contents)
         print('find most similar sentences:')
         most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
         print(most_similar_sens)
