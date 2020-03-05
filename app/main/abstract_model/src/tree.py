@@ -1,7 +1,4 @@
-import sys
-
-sys.path.append("../src")
-import data_io
+from app.main.abstract_model.src import data_io
 
 
 class tree(object):
