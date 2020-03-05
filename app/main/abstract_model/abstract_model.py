@@ -329,6 +329,19 @@ def get_content_sentences(contents: str):
     return sentences
 
 
+def summarise(contents: str, title: str):
+    model = load_word_vector_model()
+    print('compute sentences vector')
+    sentence_vectors_lookup = get_sentences_vector(contents, model)
+    print('compute content vector.')
+    content_vector = get_content_vector(contents, model)
+    print('find most similar sentences:')
+    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
+    print(most_similar_sens)
+    abstracted_content = reduce(lambda x, y: x + y, most_similar_sens)
+    return abstracted_content
+
+
 def test():
     with open("./data/new.txt", encoding='utf-8') as file:
         contents = str(file.readlines()).replace("\n", "")
