@@ -234,7 +234,8 @@ def get_sentences_vector():
     split_sentences_list = get_all_sentences(sentences, embedding_size, model)
     word_frequency_dict = get_words_frequency_dict()
     sentence_vectors = sentence_to_vec(split_sentences_list, embedding_size, word_frequency_dict)
-    return sentence_vectors
+    sentence_vector_lookup = combine_sentences_vector(sentence_vectors, sentences)
+    return sentence_vector_lookup
 
 
 def combine_sentences_vector(sentence_vectors, sentences):
@@ -293,7 +294,7 @@ def get_content_vector(content: str):
     return sentence_vectors
 
 
-def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, content_vector, title_vector):
+def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, content_vector):
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
         similarity = cosine(vector, content_vector)
@@ -315,8 +316,13 @@ def test():
     with open("./data/new.txt", encoding='utf-8') as file:
         content = str(file.readlines()).replace("\n", "")
         file.close()
-        t = get_content_vector(content)
-        print(t)
+        print('compute sentences vector')
+        sentence_vectors_lookup = get_sentences_vector()
+        print('compute content vector.')
+        content_vector = get_content_vector(content)
+        print('find most similar sentences:')
+        most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
+        print(most_similar_sens)
 
 
 # embedding_size = 100
