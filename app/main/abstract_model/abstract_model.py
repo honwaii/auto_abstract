@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import sys
+sys.path.append('E:\\NLPproject\\auto_abstract')
+
 import linecache
 import re
 from functools import reduce
@@ -356,7 +359,7 @@ def test():
 # save_sentences_embedding(s, em)
 # model = load_word_vector_model()
 
-embedding_size = 300
+embedding_size = 100
 test()
 # t = get_sentences_vector()
 # with open("./data/temp.txt", 'a+', encoding="utf-8") as file:
