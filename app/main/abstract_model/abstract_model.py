@@ -27,8 +27,8 @@ from gensim.scripts.glove2word2vec import glove2word2vec
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
-    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    model = KeyedVectors.load_word2vec_format(word_vector_model_path)
+    # model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
 
@@ -337,8 +337,7 @@ def summarise(contents: str, title: str):
     content_vector = get_content_vector(contents, model)
     print('find most similar sentences:')
     most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
-    print(most_similar_sens)
-    abstracted_content = reduce(lambda x, y: x + y, most_similar_sens)
+    abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
     return abstracted_content
 
 
@@ -346,14 +345,9 @@ def test():
     with open("./data/new.txt", encoding='utf-8') as file:
         contents = str(file.readlines()).replace("\n", "")
         file.close()
-        model = load_word_vector_model()
-        print('compute sentences vector')
-        sentence_vectors_lookup = get_sentences_vector(contents, model)
-        print('compute content vector.')
-        content_vector = get_content_vector(contents, model)
-        print('find most similar sentences:')
-        most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
-        print(most_similar_sens)
+        title = "ddddd"
+        result = summarise(contents, title)
+        print(result)
 
 
 # embedding_size = 100
@@ -362,8 +356,8 @@ def test():
 # save_sentences_embedding(s, em)
 # model = load_word_vector_model()
 
-embedding_size = 100
-
+embedding_size = 300
+test()
 # t = get_sentences_vector()
 # with open("./data/temp.txt", 'a+', encoding="utf-8") as file:
 #     for i in t:
