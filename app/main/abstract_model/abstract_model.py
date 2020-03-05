@@ -228,8 +228,7 @@ def get_all_sentences(sentences: list, embedding_size: int, word_vector_model: W
     return sentence_list
 
 
-def get_sentences_vector(contents: str):
-    model = load_word_vector_model()
+def get_sentences_vector(contents: str, model):
     # sentences = get_sentences(0, 300, True)
     sentences = get_content_sentences(contents)
     split_sentences_list = get_all_sentences(sentences, embedding_size, model)
@@ -287,8 +286,7 @@ def glove_to_word2vec():
 # 加载转化后的文件
 
 
-def get_content_vector(content: str):
-    model = load_word_vector_model()
+def get_content_vector(content: str, model):
     sentences = get_all_sentences([content], embedding_size, model)
     word_frequency_dict = get_words_frequency_dict()
     sentence_vectors = sentence_to_vec(sentences, embedding_size, word_frequency_dict)
@@ -335,10 +333,11 @@ def test():
     with open("./data/new.txt", encoding='utf-8') as file:
         contents = str(file.readlines()).replace("\n", "")
         file.close()
+        model = load_word_vector_model()
         print('compute sentences vector')
-        sentence_vectors_lookup = get_sentences_vector(contents)
+        sentence_vectors_lookup = get_sentences_vector(contents, model)
         print('compute content vector.')
-        content_vector = get_content_vector(contents)
+        content_vector = get_content_vector(contents, model)
         print('find most similar sentences:')
         most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
         print(most_similar_sens)
