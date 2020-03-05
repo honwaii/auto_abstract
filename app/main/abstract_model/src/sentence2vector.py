@@ -82,11 +82,3 @@ def sentence_to_vec(sentence_list: List[Sentence], embedding_size: int, a: float
         sentence_vecs.append(np.subtract(vs, sub))
 
     return sentence_vecs
-
-
-sentences = []
-with open('../data/test.txt') as reader:
-    for line in reader:
-        if len(line.strip()) > 0:
-            sentences.append(line.strip().split(' '))
-print(sentences)

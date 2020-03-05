@@ -1,23 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import re
-import gensim
-import pandas as pd
-import numpy as np
 import linecache
-from typing import List
+import re
 from functools import reduce
+from typing import List
+
+import gensim
+import jieba
+import scipy
+import numpy as np
+import pandas as pd
+from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
+from scipy.spatial.distance import pdist
 from sklearn.decomposition import PCA
+
+from app.main.abstract_model.domain.sentence import Sentence
 from app.main.abstract_model.domain.word import Word
+from app.main.abstract_model.src import data_io, SIF_embedding, params
 from app.main.abstract_model.src.params import params
 from app.main.common.cfg_operator import configuration
-from app.main.abstract_model.domain.sentence import Sentence
-from app.main.abstract_model.src import data_io, SIF_embedding, params
+from gensim.test.utils import datapath, get_tmpfile
+from gensim.scripts.glove2word2vec import glove2word2vec
 
 
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
+    print(word_vector_model_path)
+    # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
     model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
@@ -98,7 +108,7 @@ def handle_essay2sentences():
     path = configuration.get_config('sentences_path')
     content = pd.read_csv(path, encoding='gb18030', usecols=['content'], iterator=True)
     index = 0
-    chunk_size = 500
+    chunk_size = 20
     chunks = []
     loop = True
     while loop:
@@ -186,7 +196,8 @@ def sentence_to_vec(sentence_list: List[Sentence], embedding_size: int, look_tab
         sentence_set.append(vs)  # add to our existing re-calculated set of sentences
 
     # calculate PCA of this sentence set
-    pca = PCA(n_components=embedding_size)
+    # pca = PCA(n_components=embedding_size)
+    pca = PCA()
     pca.fit(np.array(sentence_set))
     u = pca.components_[0]  # the PCA vector
     u = np.multiply(u, np.transpose(u))  # u x uT
@@ -201,13 +212,13 @@ def sentence_to_vec(sentence_list: List[Sentence], embedding_size: int, look_tab
     for vs in sentence_set:
         sub = np.multiply(u, vs)
         sentence_vecs.append(np.subtract(vs, sub))
-
     return sentence_vecs
 
 
 def get_all_sentences(sentences: list, embedding_size: int, word_vector_model: Word2Vec):
     sentence_list = []
     for sentence in sentences:
+        sentence = jieba.cut(sentence)
         word_list = []
         for word in sentence:
             vector = get_word_vector(word, embedding_size, word_vector_model)
@@ -219,11 +230,20 @@ def get_all_sentences(sentences: list, embedding_size: int, word_vector_model: W
 
 def get_sentences_vector():
     model = load_word_vector_model()
-    sentences = get_sentences(0, 100, True)
-    split_sentences_list = get_all_sentences(sentences, 100, model)
+    sentences = get_sentences(0, 300, True)
+    split_sentences_list = get_all_sentences(sentences, embedding_size, model)
     word_frequency_dict = get_words_frequency_dict()
-    sentence_vecs = sentence_to_vec(split_sentences_list, 100, word_frequency_dict)
-    return sentence_vecs
+    sentence_vectors = sentence_to_vec(split_sentences_list, embedding_size, word_frequency_dict)
+    return sentence_vectors
+
+
+def combine_sentences_vector(sentence_vectors, sentences):
+    sentence_vector_lookup = dict()
+    if len(sentence_vectors) == len(sentences):
+        for i in range(len(sentence_vectors)):
+            # map: text of the sentence -> vector
+            sentence_vector_lookup[sentences[i].__str__()] = sentence_vectors[i]
+    return sentence_vector_lookup
 
 
 def get_words_frequency_dict():
@@ -243,11 +263,73 @@ def get_words_frequency_dict():
     return word2weight
 
 
+# print(model['的'])
+# print(t)
+
+
+def glove_to_word2vec():
+    glove_vector_model_path = configuration.get_config('glove_vector_model_path')
+    print(glove_vector_model_path)
+    word_vector_model_path = configuration.get_config('word_vector_model_path')
+    print(word_vector_model_path)
+    # 输入文件
+    glove_file = datapath(glove_vector_model_path)
+    # 输出文件
+    tmp_file = get_tmpfile(word_vector_model_path)
+    # 开始转换
+    glove2word2vec(glove_file, tmp_file)
+    print('finish')
+
+
+# glove_to_word2vec()
+# 加载转化后的文件
+
+
+def get_content_vector(content: str):
+    model = load_word_vector_model()
+    sentences = get_all_sentences([content], embedding_size, model)
+    word_frequency_dict = get_words_frequency_dict()
+    sentence_vectors = sentence_to_vec(sentences, embedding_size, word_frequency_dict)
+    return sentence_vectors
+
+
+def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, content_vector, title_vector):
+    similar_sentences = {}
+    for sen, vector in sentence_vector_lookup.items():
+        similarity = cosine(vector, content_vector)
+        similar_sentences[sen] = similarity
+    sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
+    return sorted_list[:top_num]
+
+
+def cosine(vec1, vec2):
+    distance = pdist(np.vstack([vec1, vec2]), 'cosine')[0]
+    return distance
+
+
+def knn_smooth():
+    return
+
+
+def test():
+    with open("./data/new.txt", encoding='utf-8') as file:
+        content = str(file.readlines()).replace("\n", "")
+        file.close()
+        t = get_content_vector(content)
+        print(t)
+
+
 # embedding_size = 100
 # handle_essay2sentences()
 # s, em = get_sif_embedding()
 # save_sentences_embedding(s, em)
 # model = load_word_vector_model()
 
-t = get_sentences_vector()
-print(t)
+embedding_size = 100
+
+# t = get_sentences_vector()
+# with open("./data/temp.txt", 'a+', encoding="utf-8") as file:
+#     for i in t:
+#         file.writelines(str(i))
+#     file.close()
+# print('ok')
