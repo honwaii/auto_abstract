@@ -33,8 +33,8 @@ def insert_or_update_data(sql):
 
 
 if __name__ == '__main__':
-    sql = "insert user (name, sex, age, email) values ('John', 'man', 30, 'John@gmail.com')"
+    #sql = "insert user (name, sex, age, email) values ('John', 'man', 30, 'John@gmail.com')"
     #insert_or_update_data(sql)
-    sql = "select * from user"
+    sql = "select id, name from user"
     data = query_data(sql)
     pprint.pprint(data)

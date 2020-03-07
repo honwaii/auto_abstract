@@ -60,7 +60,7 @@ def read_pvuv_data():
 
     """
     data = []
-    with open("./data/pvuv.txt") as fin:
+    with open("./data/pvuv.txt",encoding='utf-8') as fin:
         is_first_line = True
 
         for line in fin:

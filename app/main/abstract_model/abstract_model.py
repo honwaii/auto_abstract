@@ -351,6 +351,7 @@ def test():
         title = "ddddd"
         result = summarise(contents, title)
         print(result)
+        print('content:{}'.format(contents))
 
 
 # embedding_size = 100
