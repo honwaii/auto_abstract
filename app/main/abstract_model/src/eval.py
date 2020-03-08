@@ -1,9 +1,9 @@
-from scipy.stats import spearmanr
-from scipy.stats import pearsonr
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
 import numpy as np
-from . import data_io
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
+from sklearn.metrics import accuracy_score
+
+from app.main.abstract_model.src import data_io
 
 
 ################################################

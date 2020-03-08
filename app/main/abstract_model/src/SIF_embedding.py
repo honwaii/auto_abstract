@@ -13,6 +13,8 @@ def get_weighted_average(We, x, w):
     n_samples = x.shape[0]
     emb = np.zeros((n_samples, We.shape[1]))
     for i in range(n_samples):
+        if np.count_nonzero(w[i, :]) == 0:
+            print(i)
         emb[i, :] = w[i, :].dot(We[x[i, :], :]) / np.count_nonzero(w[i, :])
     return emb
 
@@ -54,7 +56,6 @@ def SIF_embedding(We, x, w, params):
     :return: emb, emb[i, :] is the embedding for sentence i
     """
     emb = get_weighted_average(We, x, w)
-    print(params.rmpc)
     if params.rmpc > 0:
         emb = remove_pc(emb, params.rmpc)
     return emb
