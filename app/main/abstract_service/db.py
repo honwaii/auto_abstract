@@ -1,6 +1,6 @@
 import pymysql
 import pprint
-
+# 持久层
 
 def get_conn():
     return pymysql.connect(
