@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import sys
+
 sys.path.append('E:\\NLPproject\\auto_abstract')
 
 import linecache
@@ -10,11 +11,12 @@ from typing import List
 
 import gensim
 import jieba
-import scipy
 import numpy as np
 import pandas as pd
 from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
+from gensim.scripts.glove2word2vec import glove2word2vec
+from gensim.test.utils import datapath, get_tmpfile
 from scipy.spatial.distance import pdist
 from sklearn.decomposition import PCA
 
@@ -23,14 +25,12 @@ from app.main.abstract_model.domain.word import Word
 from app.main.abstract_model.src import data_io, SIF_embedding, params
 from app.main.abstract_model.src.params import params
 from app.main.common.cfg_operator import configuration
-from gensim.test.utils import datapath, get_tmpfile
-from gensim.scripts.glove2word2vec import glove2word2vec
 
 
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
+    # model = KeyedVectors.load_word2vec_format(word_vector_model_path) # embeding_size=100
     model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
@@ -238,7 +238,7 @@ def get_sentences_vector(contents: str, model):
     word_frequency_dict = get_words_frequency_dict()
     sentence_vectors = sentence_to_vec(split_sentences_list, embedding_size, word_frequency_dict)
     sentence_vector_lookup = combine_sentences_vector(sentence_vectors, sentences)
-    return sentence_vector_lookup
+    return sentence_vector_lookup, sentences
 
 
 def combine_sentences_vector(sentence_vectors, sentences):
@@ -296,13 +296,44 @@ def get_content_vector(content: str, model):
     return sentence_vectors
 
 
-def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, content_vector):
+distance = 1
+
+
+def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, content_vector, sentences: list):
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
-        similarity = cosine(vector, content_vector)
+        weighted_vector, last_sentence, next_sentence = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
+        similarity = cosine(weighted_vector, content_vector)
+        # if last_sentence is not None:
+        #     sen = last_sentence + ',' + sen
+        # if next_sentence is not None:
+        #     sen = sen + ',' + next_sentence
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
     return sorted_list[:top_num]
+
+
+def get_knn_vector(sentence: str, distance: int, sentence_vector_lookup: dict, sentences: list):
+    vector = sentence_vector_lookup[sentence]
+    if distance <= 0:
+        return vector
+    for i in range(distance):
+        index = sentences.index(sentence)
+        last_sentence = None
+        next_sentence = None
+        if index > 0:
+            last_sentence = sentences[index - 1]
+            last_sentence_vector = sentence_vector_lookup[last_sentence]
+        else:
+            last_sentence_vector = np.zeros(embedding_size)
+
+        if index < len(sentences) - 1:
+            next_sentence = sentences[index + 1]
+            next_sentence_vector = sentence_vector_lookup[next_sentence]
+        else:
+            next_sentence_vector = np.zeros(embedding_size)
+        vector = vector * 0.7 + last_sentence_vector * 0.15 + next_sentence_vector * 0.15
+        return vector, last_sentence, next_sentence
 
 
 def cosine(vec1, vec2):
@@ -335,13 +366,32 @@ def get_content_sentences(contents: str):
 def summarise(contents: str, title: str):
     model = load_word_vector_model()
     print('compute sentences vector')
-    sentence_vectors_lookup = get_sentences_vector(contents, model)
+    sentence_vectors_lookup, sentences = get_sentences_vector(contents, model)
     print('compute content vector.')
     content_vector = get_content_vector(contents, model)
+    print('compute title vector.')
+    title_vector = get_content_vector(title, model)
     print('find most similar sentences:')
-    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector)
+    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, content_vector, sentences)
+    most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
     abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
     return abstracted_content
+
+
+def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list):
+    result = []
+    for sen in most_similar_sens:
+        index = sentences.index(sen)
+        if index > 0:
+            last_sentence = sentences[index - 1]
+            result.append(last_sentence)
+        result.append(sen)
+        if index < len(sentences) - 1:
+            next_sentence = sentences[index + 1]
+            result.append(next_sentence)
+    func = lambda x, y: x if y in x else x + [y]
+    r = reduce(func, [[], ] + result)
+    return r
 
 
 def test():
