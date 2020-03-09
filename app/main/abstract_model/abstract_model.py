@@ -196,29 +196,30 @@ def sentence_to_vec(sentence_list: List[Sentence], embedding_size: int, look_tab
             a_value = a / (a + get_word_frequency(word.text, look_table))  # smooth inverse frequency, SIF
             vs = np.add(vs, np.multiply(a_value, word.vector))  # vs += sif * word_vector
             # 找不到某个词的情况下，会出现得到的词向量为0
-            if np.sum(vs) == 0:
-                temp = np.ones(embedding_size)
-                vs = np.add(temp, np.multiply(a_value, word.vector))
-            vs = np.divide(vs, sentence_length)  # weighted average
-            sentence_set.append(vs)  # add to our existing re-calculated set of sentences
+            # if np.sum(vs) == 0:
+            #     temp = np.ones(embedding_size)
+            #     vs = np.add(temp, np.multiply(a_value, word.vector))
+            #     print(word.text)
+        vs = np.divide(vs, sentence_length)  # weighted average
+        sentence_set.append(vs)  # add to our existing re-calculated set of sentences
 
-            # calculate PCA of this sentence set
-            # pca = PCA(n_components=embedding_size)
-            pca = PCA()
-            pca.fit(np.array(sentence_set))
-            u = pca.components_[0]  # the PCA vector
-            u = np.multiply(u, np.transpose(u))  # u x uT
+    # calculate PCA of this sentence set
+    # pca = PCA(n_components=embedding_size)
+    pca = PCA()
+    pca.fit(np.array(sentence_set))
+    u = pca.components_[0]  # the PCA vector
+    u = np.multiply(u, np.transpose(u))  # u x uT
 
     # pad the vector?  (occurs if we have less sentences than embeddings_size)
     if len(u) < embedding_size:
         for i in range(embedding_size - len(u)):
             u = np.append(u, 0)  # add needed extension for multiplication below
 
-            # resulting sentence vectors, vs = vs -u x uT x vs
-            sentence_vecs = []
-            for vs in sentence_set:
-                sub = np.multiply(u, vs)
-            sentence_vecs.append(np.subtract(vs, sub))
+    # resulting sentence vectors, vs = vs -u x uT x vs
+    sentence_vecs = []
+    for vs in sentence_set:
+        sub = np.multiply(u, vs)
+        sentence_vecs.append(np.subtract(vs, sub))
     return sentence_vecs
 
 
@@ -306,9 +307,8 @@ distance = 1
 def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title_content_vector, sentences: list):
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
-        weighted_vector, last_sentences, next_sentences = get_knn_vector(sen, distance, sentence_vector_lookup,
-                                                                         sentences)
-        essay_vector = 0.25 * title_content_vector[0] + 0.75 * title_content_vector[0]
+        weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
+        essay_vector = 0.25 * title_content_vector[0] + 0.75 * title_content_vector[1]
         similarity = cosine(weighted_vector, essay_vector)
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
@@ -371,17 +371,19 @@ def summarise(contents: str, title: str):
     sentence_vectors_lookup, sentences = get_sentences_vector(contents, model)
     print('compute title and content vector...')
     title_content_vector = get_content_vector([title, contents], model)
-    print('compute title vector.')
-
     print('find most similar sentences:')
-    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, title_content_vector, sentences)
+    most_similar_sens = get_most_similar_sentences(5, sentence_vectors_lookup, title_content_vector, sentences)
+    print(most_similar_sens)
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
-    abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
+    if len(most_similar_sens) > 0:
+        abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
+    else:
+        abstracted_content = "文章内容不合适."
     return abstracted_content
 
 
 def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list):
-    result = []
+    temp = []
     for sen in most_similar_sens:
         last_sentences = []
         next_sentences = []
@@ -396,15 +398,22 @@ def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list
                 next_sentences.append(next_sentence)
         last_sentences.reverse()
         last_sentences.append(sen)
-        result += last_sentences + next_sentences
-    return result
+        temp += last_sentences + next_sentences
+    nearby_sentences = []
+    for sen in temp:
+        if sen not in nearby_sentences:
+            nearby_sentences.append(sen)
+    return nearby_sentences
 
 
 def test():
     with open("./data/new.txt", encoding='utf-8') as file:
-        contents = str(file.readlines()[0])
+        lines = file.readlines()
+        contents = ""
+        for line in lines:
+            contents += line.replace("\n", "")
         file.close()
-        title = "ddddd"
+        title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
         result = summarise(contents, title)
         print(result)
 
