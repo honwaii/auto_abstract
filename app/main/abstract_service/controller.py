@@ -10,9 +10,11 @@ import json
 from pyecharts.charts import Bar, Pie, Line
 from pyecharts import options as opts
 
-from app import db
-from jinja2 import Markup
 
+
+from jinja2 import Markup
+from app.main.abstract_service import db
+from app.main.abstract_service import service
 # 视图层
 
 app = Flask(__name__)

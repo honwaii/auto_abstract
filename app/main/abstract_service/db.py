@@ -22,14 +22,38 @@ def query_data(sql):
         conn.close()
 
 
+def query_data_with_param(sql, param):
+    conn = get_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql, param)
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+
 def insert_or_update_data(sql):
     conn = get_conn()
     try:
         cursor = conn.cursor()
-        cursor.execute(sql)
+        ret = cursor.execute(sql)
         conn.commit()
     finally:
         conn.close()
+        return ret
+
+
+# 新增blob数据，避免sql注入问题
+def insert_with_param(sql, param):
+    conn = get_conn()
+    try:
+        cursor = conn.cursor()
+        # 成功自动返回1
+        ret = cursor.execute(sql, param)
+        conn.commit()
+    finally:
+        conn.close()
+        return ret
 
 
 if __name__ == '__main__':
