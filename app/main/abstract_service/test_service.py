@@ -1,5 +1,6 @@
 from app.main.abstract_service import db
 import pymysql
+import pprint
 from app.main.abstract_service import service
 
 
@@ -61,11 +62,11 @@ class TestClass:
         print(ret)
         # assert(service.insert_history(history))
 
-    # 测试service.insert_history
+    # 测试service.select_history
     def test_select_history(self):
         history = {
             "title": "333",
             "content": "test"
         }
         histories = service.select_history(history)
-        print(histories)
+        pprint.pprint(histories)

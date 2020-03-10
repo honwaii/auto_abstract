@@ -1,6 +1,7 @@
 # 业务逻辑层
 from app.main.abstract_service import db
 import time
+import pprint
 
 
 # 插入model
@@ -44,27 +45,42 @@ def insert_history(history):
     return ret
 
 
-# TODO 按查询参数模糊查询所有历史
-# def select_history(history):
-#     sql = "select * from auto_abstract_history where title like %s and content like %s " \
-#           "and abstract like %s and model_id = %s and timestamp = %s"
-#
-#     title_like = "%" + history["title"] + "%"
-#     content_like = "%" + history["content"] + "%"
-#     abstract_like = "%%"
-#     model_id = "%%"
-#     timestamp = "%%"
-#     # abstract_like = "%" + history["abstract"] + "%"
-#     # model_id = history["model_id"]
-#     # timestamp = history["timestamp"]
-#     select_history_tuple = {title_like, content_like, abstract_like, model_id, timestamp}
-#     histories = db.query_data_with_param(sql, select_history_tuple)
-#     return histories
+# 按查询参数模糊查询所有历史
+def select_history(history: dict) -> list:
+    sql = "select * from auto_abstract_history where title like %s and content like %s"\
+          "and abstract like %s and model_id like %s and timestamp like %s"
+    # 处理无key情况
+    if not history.__contains__("title"):
+        history["title"] = ""
 
-def select_history():
-    sql = "select * from auto_abstract_history"
-    histories = db.query_data(sql)
+    if not history.__contains__("content"):
+        history["content"] = ""
+
+    if not history.__contains__("abstract"):
+        history["abstract"] = ""
+
+    if not history.__contains__("model_id"):
+        history["model_id"] = ""
+
+    if not history.__contains__("timestamp"):
+        history["timestamp"] = ""
+
+    title_like = "%" + history["title"] + "%"
+    content_like = "%" + history["content"] + "%"
+    abstract_like = "%" + history["abstract"] + "%"
+    model_id = "%" + history["model_id"] + "%"
+    timestamp = "%" +  history["timestamp"] + "%"
+
+    select_history_list = [title_like, content_like, abstract_like, model_id, timestamp]
+    histories = db.query_data_with_param(sql, select_history_list)
     return histories
+
+
+#
+# def select_history():
+#     sql = "select * from auto_abstract_history"
+#     histories = db.query_data(sql)
+#     return histories
 
 # 从数据库查出二进制数据写到硬盘./picture
 def store_picture():
@@ -84,5 +100,8 @@ def store_picture():
 
 
 if __name__ == '__main__':
-    histories = select_history()
-    print(histories)
+    history = {
+        "title": "333",
+    }
+    histories = select_history(history)
+    pprint.pprint(histories)
