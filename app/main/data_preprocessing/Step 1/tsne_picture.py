@@ -8,7 +8,7 @@ def tsne_plot(model):
     tokens = []
     total_size = len(model.wv.vocab)
     probability = 200.0/total_size
-    r =
+    # r =
     for word in model.wv.vocab:
 
         tokens.append(model[word])
