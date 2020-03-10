@@ -173,6 +173,27 @@ def cut_sentences(contents: str):
     return sentences
 
 
+def cut_sentences_with_dot(contents: str):
+    contents = contents.replace("\n", "").strip()
+    contents = contents.replace("\t", "").strip()
+    contents = contents.replace("\r", "").strip()
+    regex = r"[？！。?!【】;；……]"
+    sentences_list = re.split(regex, contents)
+    sentences = []
+    for index in range(len(sentences_list)):
+        s = sentences_list[index]
+        sen_1 = re.subn(r"@(.*)：", "", s)[0].strip()
+        sen_2 = re.subn(r"\s", "", sen_1)[0].strip()
+        sen = re.subn(r"(（.*）)", "", sen_2)[0].strip()
+        if len(sen) <= 1 or len(sen.strip()) <= 1:
+            continue
+        if index == len(sentences_list) - 1:
+            sentences.append(sen)
+        else:
+            sentences.append(sen + '\r')
+    return sentences
+
+
 def save_sentence(sentences: list):
     path = configuration.get_config("processed_sentences")
     output = open(path, 'a+', encoding='utf-8')
@@ -343,10 +364,6 @@ def cosine(vec1, vec2):
     return distance
 
 
-def knn_smooth():
-    return
-
-
 def get_content_sentences(contents: str):
     contents = contents.replace("\n", "").strip()
     contents = contents.replace("\t", "").strip()
@@ -373,6 +390,8 @@ def summarise(contents: str, title: str):
     title_content_vector = get_content_vector([title, contents], model)
     print('find most similar sentences:')
     most_similar_sens = get_most_similar_sentences(5, sentence_vectors_lookup, title_content_vector, sentences)
+    sentences_dot = cut_sentences_with_dot(contents)
+
     print(most_similar_sens)
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
     if len(most_similar_sens) > 0:
@@ -382,23 +401,40 @@ def summarise(contents: str, title: str):
     return abstracted_content
 
 
-def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list):
+def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list, sentences_dot: list):
     temp = []
     for sen in most_similar_sens:
         last_sentences = []
         next_sentences = []
+
         for i in range(distance):
             index = sentences.index(sen)
             if index - 1 - i > 0:
                 last_sentence = sentences[index - 1 - i]
+                # 句子是一句话的开头时，则不添加上一句
+                last_flag = 1
+                for s in sentences_dot:
+                    if s.find(last_sentence) == 0:
+                        last_flag = 0
+                        break
+                if last_flag == 0:
+                    break
                 last_sentences.append(last_sentence)
 
             if index + 1 + i < len(sentences) - 1:
                 next_sentence = sentences[index + i + 1]
-                next_sentences.append(next_sentence)
+                next_flag = 1
+                for s in sentences_dot:
+                    if (s.find(sen) + len(sen)) == len(s):
+                        next_flag = 0
+                        break
+                if next_flag != 0:
+                    next_sentences.append(next_sentence)
+
         last_sentences.reverse()
         last_sentences.append(sen)
         temp += last_sentences + next_sentences
+
     nearby_sentences = []
     for sen in temp:
         if sen not in nearby_sentences:
@@ -418,17 +454,5 @@ def test():
         print(result)
 
 
-# embedding_size = 100
-# handle_essay2sentences()
-# s, em = get_sif_embedding()
-# save_sentences_embedding(s, em)
-# model = load_word_vector_model()
-
 embedding_size = 100
 test()
-# t = get_sentences_vector()
-# with open("./data/temp.txt", 'a+', encoding="utf-8") as file:
-#     for i in t:
-#         file.writelines(str(i))
-#     file.close()
-# print('ok')
