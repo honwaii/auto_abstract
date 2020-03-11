@@ -303,9 +303,9 @@ distance = 1
 def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title_content_vector, sentences: list):
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
-        weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
+        # weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
         essay_vector = 0.5 * title_content_vector[0] + 0.5 * title_content_vector[1]
-        similarity = cosine(weighted_vector, essay_vector)
+        similarity = cosine(vector, essay_vector)
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
     most_similar_sens = sorted_list[:top_num]
@@ -378,6 +378,9 @@ def summarise(contents: str, title: str):
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
     if len(most_similar_sens) > 0:
         abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens) + "。"
+        result_vector = get_content_vector([title, contents, abstracted_content], model)
+        result_similarity = cosine(result_vector[1], result_vector[2])
+        print("摘要与全文的相似度:" + str(result_similarity))
     else:
         abstracted_content = "文章内容不合适."
     return abstracted_content
@@ -431,6 +434,7 @@ def test():
         title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
         print(contents)
         result = summarise(contents, title)
+
         print(result)
 
 
