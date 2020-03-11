@@ -1,7 +1,8 @@
 # 业务逻辑层
+import sys
+sys.path
 from app.main.abstract_service import db
 import time
-
 
 # 插入model
 def insert_model(model):
@@ -17,7 +18,9 @@ def insert_model(model):
             """
     insert_model_tuple = (model["parameters"], model["input"], model["output"], model["picture"], model["timestamp"])
     print(sql)
-    db.insert_with_param(sql, insert_model_tuple)
+    ret=db.insert_with_param(sql, insert_model_tuple)
+    return ret
+
 
 
 # 根据id查询model
