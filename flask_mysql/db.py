@@ -6,7 +6,7 @@ def get_conn():
     return pymysql.connect(
         host='127.0.0.1',
         user='root',
-        password='12345678',
+        password='dd820117',
         database='python_mysql',
         charset='utf8'
     )
@@ -34,7 +34,7 @@ def insert_or_update_data(sql):
 
 if __name__ == '__main__':
     sql = "insert user (name, sex, age, email) values ('John', 'man', 30, 'John@gmail.com')"
-    # insert_or_update_data(sql)
+    #insert_or_update_data(sql)
     sql = "select * from user"
     data = query_data(sql)
     pprint.pprint(data)
