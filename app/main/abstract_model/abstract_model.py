@@ -30,8 +30,8 @@ from app.main.common.cfg_operator import configuration
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    # model = KeyedVectors.load_word2vec_format(word_vector_model_path) # embeding_size=100
-    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    model = KeyedVectors.load_word2vec_format(word_vector_model_path) # embeding_size=100
+    # model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
 
@@ -173,27 +173,6 @@ def cut_sentences(contents: str):
     return sentences
 
 
-def cut_sentences_with_dot(contents: str):
-    contents = contents.replace("\n", "").strip()
-    contents = contents.replace("\t", "").strip()
-    contents = contents.replace("\r", "").strip()
-    regex = r"[？！。?!【】;；……]"
-    sentences_list = re.split(regex, contents)
-    sentences = []
-    for index in range(len(sentences_list)):
-        s = sentences_list[index]
-        sen_1 = re.subn(r"@(.*)：", "", s)[0].strip()
-        sen_2 = re.subn(r"\s", "", sen_1)[0].strip()
-        sen = re.subn(r"(（.*）)", "", sen_2)[0].strip()
-        if len(sen) <= 1 or len(sen.strip()) <= 1:
-            continue
-        if index == len(sentences_list) - 1:
-            sentences.append(sen)
-        else:
-            sentences.append(sen + '\r')
-    return sentences
-
-
 def save_sentence(sentences: list):
     path = configuration.get_config("processed_sentences")
     output = open(path, 'a+', encoding='utf-8')
@@ -293,10 +272,6 @@ def get_words_frequency_dict():
     return word2weight
 
 
-# print(model['的'])
-# print(t)
-
-
 def glove_to_word2vec():
     glove_vector_model_path = configuration.get_config('glove_vector_model_path')
     print(glove_vector_model_path)
@@ -329,11 +304,20 @@ def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
         weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
-        essay_vector = 0.25 * title_content_vector[0] + 0.75 * title_content_vector[1]
+        essay_vector = 0.5 * title_content_vector[0] + 0.5 * title_content_vector[1]
         similarity = cosine(weighted_vector, essay_vector)
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
-    return sorted_list[:top_num]
+    most_similar_sens = sorted_list[:top_num]
+
+    indexes = []
+    for each in most_similar_sens:
+        indexes.append(sentences.index(each))
+    indexes = sorted(indexes)
+    result = []
+    for i in indexes:
+        result.append(sentences[i])
+    return result
 
 
 def get_knn_vector(sentence: str, distance: int, sentence_vector_lookup: dict, sentences: list):
@@ -389,52 +373,34 @@ def summarise(contents: str, title: str):
     print('compute title and content vector...')
     title_content_vector = get_content_vector([title, contents], model)
     print('find most similar sentences:')
-    most_similar_sens = get_most_similar_sentences(5, sentence_vectors_lookup, title_content_vector, sentences)
-    sentences_dot = cut_sentences_with_dot(contents)
-
+    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, title_content_vector, sentences)
     print(most_similar_sens)
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
     if len(most_similar_sens) > 0:
-        abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
+        abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens) + "。"
     else:
         abstracted_content = "文章内容不合适."
     return abstracted_content
 
 
-def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list, sentences_dot: list):
+def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list):
     temp = []
     for sen in most_similar_sens:
         last_sentences = []
-        next_sentences = []
-
+        # 只选取添加一些连词， 其他无关的句子不选取
         for i in range(distance):
             index = sentences.index(sen)
-            if index - 1 - i > 0:
-                last_sentence = sentences[index - 1 - i]
-                # 句子是一句话的开头时，则不添加上一句
-                last_flag = 1
-                for s in sentences_dot:
-                    if s.find(last_sentence) == 0:
-                        last_flag = 0
-                        break
-                if last_flag == 0:
-                    break
+            if index - 1 - i < 0:
+                continue
+            last_sentence = sentences[index - 1 - i]
+            if len(last_sentence) < 3:
                 last_sentences.append(last_sentence)
-
-            if index + 1 + i < len(sentences) - 1:
-                next_sentence = sentences[index + i + 1]
-                next_flag = 1
-                for s in sentences_dot:
-                    if (s.find(sen) + len(sen)) == len(s):
-                        next_flag = 0
-                        break
-                if next_flag != 0:
-                    next_sentences.append(next_sentence)
 
         last_sentences.reverse()
         last_sentences.append(sen)
-        temp += last_sentences + next_sentences
+        temp += last_sentences
 
+    # # 去重
     nearby_sentences = []
     for sen in temp:
         if sen not in nearby_sentences:
@@ -450,9 +416,10 @@ def test():
             contents += line.replace("\n", "")
         file.close()
         title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
+        print(contents)
         result = summarise(contents, title)
         print(result)
 
 
-embedding_size = 100
+embedding_size = 300
 test()
