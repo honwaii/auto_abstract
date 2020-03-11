@@ -30,7 +30,7 @@ from app.main.common.cfg_operator import configuration
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    model = KeyedVectors.load_word2vec_format(word_vector_model_path) # embeding_size=100
+    model = KeyedVectors.load_word2vec_format(word_vector_model_path)  # embeding_size=100
     # model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
@@ -406,6 +406,19 @@ def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list
         if sen not in nearby_sentences:
             nearby_sentences.append(sen)
     return nearby_sentences
+
+
+learning_rate = 0.01
+
+
+def optimize(title_vector, content_vector):
+    # 计算每个句子和文章的相似度时，需考虑标题和内容的权重
+    # 文章和标题的句向量, 假设title和内容是线性相关的，则 vector = alpha * title + (1 - alpha) * content + b
+    dw = title_vector - content_vector
+    db = 1
+    # w = w - learning_rate * dw
+    # b = b - learning_rate * db
+    return
 
 
 def test():
