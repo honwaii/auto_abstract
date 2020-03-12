@@ -30,8 +30,8 @@ from app.main.common.cfg_operator import configuration
 def load_word_vector_model():
     word_vector_model_path = configuration.get_config('word_vector_model_path')
     print(word_vector_model_path)
-    # model = KeyedVectors.load_word2vec_format(word_vector_model_path) # embeding_size=100
-    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    model = KeyedVectors.load_word2vec_format(word_vector_model_path)  # embeding_size=100
+    # model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
 
@@ -272,10 +272,6 @@ def get_words_frequency_dict():
     return word2weight
 
 
-# print(model['的'])
-# print(t)
-
-
 def glove_to_word2vec():
     glove_vector_model_path = configuration.get_config('glove_vector_model_path')
     print(glove_vector_model_path)
@@ -307,12 +303,21 @@ distance = 1
 def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title_content_vector, sentences: list):
     similar_sentences = {}
     for sen, vector in sentence_vector_lookup.items():
-        weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
-        essay_vector = 0.25 * title_content_vector[0] + 0.75 * title_content_vector[1]
-        similarity = cosine(weighted_vector, essay_vector)
+        # weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
+        essay_vector = 0.5 * title_content_vector[0] + 0.5 * title_content_vector[1]
+        similarity = cosine(vector, essay_vector)
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
-    return sorted_list[:top_num]
+    most_similar_sens = sorted_list[:top_num]
+
+    indexes = []
+    for each in most_similar_sens:
+        indexes.append(sentences.index(each))
+    indexes = sorted(indexes)
+    result = []
+    for i in indexes:
+        result.append(sentences[i])
+    return result
 
 
 def get_knn_vector(sentence: str, distance: int, sentence_vector_lookup: dict, sentences: list):
@@ -343,10 +348,6 @@ def cosine(vec1, vec2):
     return distance
 
 
-def knn_smooth():
-    return
-
-
 def get_content_sentences(contents: str):
     contents = contents.replace("\n", "").strip()
     contents = contents.replace("\t", "").strip()
@@ -372,11 +373,14 @@ def summarise(contents: str, title: str):
     print('compute title and content vector...')
     title_content_vector = get_content_vector([title, contents], model)
     print('find most similar sentences:')
-    most_similar_sens = get_most_similar_sentences(5, sentence_vectors_lookup, title_content_vector, sentences)
+    most_similar_sens = get_most_similar_sentences(10, sentence_vectors_lookup, title_content_vector, sentences)
     print(most_similar_sens)
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
     if len(most_similar_sens) > 0:
-        abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens)
+        abstracted_content = reduce(lambda x, y: x + ', ' + y, most_similar_sens) + "。"
+        result_vector = get_content_vector([title, contents, abstracted_content], model)
+        result_similarity = cosine(result_vector[1], result_vector[2])
+        print("摘要与全文的相似度:" + str(result_similarity))
     else:
         abstracted_content = "文章内容不合适."
     return abstracted_content
@@ -386,24 +390,38 @@ def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list
     temp = []
     for sen in most_similar_sens:
         last_sentences = []
-        next_sentences = []
+        # 只选取添加一些连词， 其他无关的句子不选取
         for i in range(distance):
             index = sentences.index(sen)
-            if index - 1 - i > 0:
-                last_sentence = sentences[index - 1 - i]
+            if index - 1 - i < 0:
+                continue
+            last_sentence = sentences[index - 1 - i]
+            if len(last_sentence) < 3:
                 last_sentences.append(last_sentence)
 
-            if index + 1 + i < len(sentences) - 1:
-                next_sentence = sentences[index + i + 1]
-                next_sentences.append(next_sentence)
         last_sentences.reverse()
         last_sentences.append(sen)
-        temp += last_sentences + next_sentences
+        temp += last_sentences
+
+    # # 去重
     nearby_sentences = []
     for sen in temp:
         if sen not in nearby_sentences:
             nearby_sentences.append(sen)
     return nearby_sentences
+
+
+learning_rate = 0.01
+
+
+def optimize(title_vector, content_vector):
+    # 计算每个句子和文章的相似度时，需考虑标题和内容的权重
+    # 文章和标题的句向量, 假设title和内容是线性相关的，则 vector = alpha * title + (1 - alpha) * content + b
+    dw = title_vector - content_vector
+    db = 1
+    # w = w - learning_rate * dw
+    # b = b - learning_rate * db
+    return
 
 
 def test():
@@ -414,22 +432,11 @@ def test():
             contents += line.replace("\n", "")
         file.close()
         title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
+        print(contents)
         result = summarise(contents, title)
+
         print(result)
-        print('content:{}'.format(contents))
 
 
-# embedding_size = 100
-# handle_essay2sentences()
-# s, em = get_sif_embedding()
-# save_sentences_embedding(s, em)
-# model = load_word_vector_model()
-
-embedding_size = 100
+embedding_size = 300
 test()
-# t = get_sentences_vector()
-# with open("./data/temp.txt", 'a+', encoding="utf-8") as file:
-#     for i in t:
-#         file.writelines(str(i))
-#     file.close()
-# print('ok')
