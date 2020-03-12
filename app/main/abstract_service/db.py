@@ -51,10 +51,14 @@ def insert_with_param(sql, param):
         # 成功自动返回1
         ret = cursor.execute(sql, param)
         conn.commit()
+        if ret == 1:
+            print("insert successfully.")
+            cursor.execute("select LAST_INSERT_ID()")
+            return cursor.fetchall()
+        else:
+            return 0
     finally:
         conn.close()
-        return ret
-
 
 if __name__ == '__main__':
     sql = "insert user (name, sex, age, email) values ('John', 'man', 30, 'John@gmail.com')"
