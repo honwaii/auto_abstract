@@ -22,10 +22,11 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 drop table IF EXISTS `auto_abstract_history`;
 create TABLE `auto_abstract_history` (
-  `history_id` int(11) NOT NULL,
+  `history_id` int NOT NULL AUTO_INCREMENT ,
   `title` varchar(255) NOT NULL COMMENT '标题',
-  `abstract` varchar(255) NOT NULL COMMENT '摘要内容',
-  `similarity` varchar(255) DEFAULT NULL COMMENT '最相似的句子，json形式 {"sentence": "similarity"} ',
+  `content` varchar(2040) NOT NULL COMMENT '内容',
+  `abstract` varchar(2040) NOT NULL COMMENT '摘要内容',
+  `similarity` varchar(2040) DEFAULT NULL COMMENT '最相似的句子，json形式 {"sentence": "similarity"} ',
   `model_id` int(11) DEFAULT NULL COMMENT '对应的模型id',
   `timestamp` timestamp NULL DEFAULT NULL ON update current_timestamp(),
   PRIMARY KEY (`history_id`)
@@ -36,7 +37,7 @@ create TABLE `auto_abstract_history` (
 -- ----------------------------
 drop table IF EXISTS `auto_abstract_model`;
 create TABLE `auto_abstract_model` (
-  `model_id` int(11) NOT NULL,
+  `model_id` int NOT NULL AUTO_INCREMENT,
   `word_embedding_feature` int(11) NOT NULL COMMENT '词向量模型的维度',
   `coefficients` float(6,3) DEFAULT NULL COMMENT '标题和文章之间的相关系数 (0~1)',
   `exceptions` float(6,3) DEFAULT NULL COMMENT '该模型得到的所有摘要相关性的期望',

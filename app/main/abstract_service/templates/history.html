@@ -2,7 +2,7 @@
 {% extends "layout.html" %}
 
 {% block head %}
-<title>NLPartners-History</title>
+<title>NLPartners-查询历史</title>
 {% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
     <div class="container justify-content-center">
 
       <div class="row mt-3 mx-2">
-        <h2>History</h2>
+        <h2>查询历史</h2>
       </div>
       
       <div class="row mx-2">
@@ -18,10 +18,10 @@
             <thead class="thead-dark">
               <tr>
                 <th scope="col">ID</th>
-                <th scope="col">Title</th>
-                <th scope="col">Content</th>
-                <th scope="col">Time</th>
-                <th scope="col">Detail</th>
+                <th scope="col">标题</th>
+                <th scope="col">摘要</th>
+                <th scope="col">提交时间</th>
+                <th scope="col">内容</th>
               </tr>
             </thead>
             <tbody>
@@ -29,9 +29,9 @@
                   <tr>
                     <th scope="row">{{history["history_id"]}}</th>
                     <td>{{history["title"]}}</td>
-                    <td>{{history["content"]}}</td>
+                    <td>{{history["abstract"]}}</td>
                     <td>{{history["timestamp"]}}</td>
-                    <td><a href="{{url_for('show_auto_abs_result',model_id=history["model_id"])}}">Detail</a></td>
+                    <td><a class="text-dark" href="{{url_for('show_auto_abs_result',history_id=history["history_id"])}}">更多</a></td>
                   </tr>
                 {% endfor%}
             </tbody>
@@ -39,5 +39,48 @@
       </div>
       
     </div>
+
+    <div>
+      <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+          
+          {% if page==1 %}
+            <li class="page-item disabled">
+              <a class="page-link" href="#" aria-disabled="true">Previous</a>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link text-dark" href="{{url_for('history_page',page=page-1)}}">Previous</a>
+            </li>
+          {% endif %}
+
+          {% for num in range(page_num) %}
+
+            {% if (num+1) == page %}
+              <li class="page-item" aria-current="page">
+                <span class="page-link text-white bg-dark">
+                  {{num+1}}
+                  <span class="sr-only">(current)</span>
+                </span>
+              </li>
+
+            {% else %}
+              <li class="page-item"><a class="page-link text-dark" href="{{url_for('history_page',page=num+1)}}">{{num+1}}</a></li>
+            {% endif %}
+
+          {% endfor %}
+          {% if page==page_num %}
+            <li class="page-item disabled">
+              <a class="page-link" href="#" aria-disabled="true">Next</a>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link text-dark" href="{{url_for('history_page',page=page+1)}}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    
   </main>
 {% endblock %}

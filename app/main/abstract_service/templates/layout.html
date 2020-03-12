@@ -3,6 +3,7 @@
   <head>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600' rel='stylesheet'>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <meta charset="UTF-8">
     {% block head %}
     {% endblock %}
@@ -18,13 +19,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link" href="{{url_for('auto_abs')}}">Auto Abstract</a>
+              <a class="nav-link" href="{{url_for('auto_abs')}}">摘要自动提取</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{url_for('history')}}">History</a>
+              <a class="nav-link" href="{{url_for('most_similar_words')}}">相似词查询</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{url_for('algorithm_model')}}">Algorithm & Model</a>
+              <a class="nav-link" href="{{url_for('history')}}">查询历史</a>
             </li>
           </ul>
         </div>

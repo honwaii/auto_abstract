@@ -8,32 +8,84 @@
 {% block content %}
   <main>
     <div class="container justify-content-center">
-      <div class="row mt-3 mx-2">
-        <h2>Auto-Abstract Result</h2>
-      </div>
       
-      <div class="card">
-        <h5 class="card-header">Input</h5>
+      <div class="row mt-3 mx-2">
+        <h2>摘要自动提取结果</h2>
+      </div>
+      <h8 class="card-title">提交时间:{{model["timestamp"]}}</h8>
+
+      <div class="card w-80">
+        <h5 class="card-header text-white bg-dark">Input</h5>
         <div class="card-body">
-            <h5 class="card-title">Title: </h5>
-            <p class="card-text">{{model["input"]["input_title"]}}</p>
-            <h5 class="card-title">Content: </h5>
-            <p class="card-text"><mark class="text-light bg-dark">{{model["output"]}}</mark>{{model["input"]["input_content"]}}</p>
+
+          <div class="row">
+            <h5 class="card-title">标题: </h5>
+            <div class="card-body">
+              <p class="card-text">{{model["title"]}}</p>
+            </div>
+          </div>
+          
+          <div class="row">
+            <h5 class="card-title">内容: </h5>
+            <div class="card-body">
+            <p class="card-text">
+              {{model["content"]}}
+            </p>
+            </div>
+          </div>
+            
         </div>
       </div>
-      <div class="card">
-        <h5 class="card-header">Output</h5>
+
+      <div class="card w-80">
+        <h5 class="card-header text-white bg-dark">Output</h5>
         <div class="card-body">
-            <h5 class="card-title">Abstract:</h5>
-            <p class="card-text"> {{model["output"]}}</p>
+          <div class="row">
+            <p>
+              <a class="btn btn-dark" data-toggle="collapse" href="#abstract" role="button" aria-expanded="false" aria-controls="abstract">
+                内容摘要
+              </a>
+              <a class="btn btn-dark" data-toggle="collapse" href="#mostsimilarsentence" role="button" aria-expanded="false" aria-controls="mostsimilarsentence">
+                重要性最高的句子
+              </a>
+            </p>
+          </div>
+            <div class="collapse p-1" id="abstract">
+              <div class="card card-body bg-light">
+                <p class="card-text"> {{model["abstract"]}}</p>
+              </div>
+            </div>
+            
+            <div class="collapse p-1 " id="mostsimilarsentence">
+                <table class="table rounded">
+                  <thead class="thead-light">
+                    <tr>
+                      <th scope="col">句子</th>
+                      <th scope="col">相似度</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {% for sentence in model["similarity"] %}
+                        <tr>
+                          <th scope="row">{{sentence}}</th>
+                          <td>{{model["similarity"][sentence]}}</td>
+                          </tr>
+                      {% endfor%}
+                  </tbody>
+                </table>
+            </div>
+            
+
+            
         </div>
       </div>
-      <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">TSNE-FIG:</h5>
-            <img class="w-50" src="{{model["picture"]}}">
-        </div>
-      </div>
+
     </div>
+
+
+    
+    
+
+
   </main>
 {% endblock %}
