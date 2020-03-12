@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import datetime
-
+import math
 from flask import Flask, render_template, request,url_for, send_from_directory, redirect
 import json
 
@@ -15,56 +15,104 @@ app = Flask(__name__)
 def index():
   return render_template("index.html")
 
+#自动摘要输入页面
 @app.route("/auto_abs")
 def auto_abs():
   return render_template("auto_abs.html")
 
-@app.route("/show_auto_abs_result/<model_id>")
-def show_auto_abs_result(model_id):
-  '''
-  sql = "select * from auto_abstract_model where model_id=" + model_id
-  data = db.query_data(sql)
-  model = data[0]
-  '''
-  view_model=service.select_model(model_id)
+@app.route("/show_auto_abs_result/<history_id>")
+def show_auto_abs_result(history_id):
+
+  history=service.select_history_byid(history_id)
+  view_model={
+              "title":history["title"],
+              "content":history["content"],
+              "abstract":history["abstract"],
+              "similarity":json.loads(history["similarity"]),
+              "timestamp":history["timestamp"],
+              }
+  model_id=history["model_id"]
 
   return render_template("auto_abs_result.html",model=view_model)
 
+@app.route("/mostsim_words")
+def most_similar_words():
+  return render_template("most_similar_words.html")
+
+@app.route("/mostsim_words/<word>")
+def show_most_similar_words(word):
+  result=get_most_similar_words(word)
+  tsne_fig=get_tsne_fig(word)
+  return render_template("most_similar_words.html",word=word,ms_words=result,tsne_fig=tsne_fig)
+
 @app.route("/history")
 def history():
-  histories=get_auto_abstract_history()
-  return render_template("history.html",histories=histories)
+  return redirect(url_for('history_page',page=1))
 
-@app.route("/algorithm_model")
-def algorithm_model():
-  return render_template("algorithm_model.html")
+@app.route("/history/<page>")
+def history_page(page=1):
+  page=int(page)
+  history_number_in_a_page=8
+  histories=service.select_history_all()
+  print(type(histories),type(len(histories)))
+  page_num=math.ceil(int(len(histories))/history_number_in_a_page)
+  start_id=(page-1)*history_number_in_a_page+1
+  if page == page_num:
+    histories=histories[start_id-1:]
+  else:  
+    histories=histories[start_id-1:start_id+7]
+  #print(histories)
+
+  return render_template("history.html",histories=histories,page=page,page_num=page_num)
 
 
 
 
+
+#提交输入数据
 @app.route("/submit_input", methods=["POST"])
 def submit_input():
   print(request.form)
-  input_title=request.form.get("input_title")
-  input_content=request.form.get("input_content")
-  output_abstract=get_abstract(input_title,input_content)
-  output_tsne_fig=get_tsne_fig(input_title,input_content)
+  title=request.form.get("input_title")
+  content=request.form.get("input_content")
+  #调用模型接口
+  output=get_output(title,content)
+  
+  history={}
+  history["title"]=title
+  history["content"]=content
+  history["abstract"]=output['abstract']
+  history["similarity"]=output['similarity']
+  history["model_id"]=output["model_id"]
+  response=service.insert_history(history)
+  print(response)
+  if response != 0:
+    history_id=response
+    return redirect(url_for('show_auto_abs_result',history_id=history_id))
+  else:
+    return render_template("auto_abs.html")
 
-  model={}
-  model["parameters"]={100}
-  model["input"]=input_title
-  model["output"]=output_abstract
-  model["picture"]=output_tsne_fig
-  response=service.insert_model(model)
-  model_id=1
-
-  return redirect(url_for('show_auto_abs_result',model_id=model_id))
+@app.route("/submit_word", methods=["POST"])
+def submit_word():
+  print(request.form)
+  input_word=request.form.get("input_word")
+  if input_word =="":
+    return redirect(url_for('most_similar_words'))
+  else:
+    return redirect(url_for('show_most_similar_words',word=input_word))
 
 
 
 #hard code
-def get_abstract(input_title:str,input_sentence:str):
-  return "作为全球最大口罩生产国，我国出口的口罩占据着海外市场将近50%的供应"
+def get_output(input_title:str,input_sentence:str):
+  model_id=str(1)
+  similarity={"作为全球最大口罩生产国":4,"我国出口的口罩占据着海外市场将近50%的供应":3,}
+  output={
+          "abstract"  : "作为全球最大口罩生产国，我国出口的口罩占据着海外市场将近50%的供应",
+          "similarity": json.dumps(similarity),
+          "model_id"  : model_id
+          }
+  return output
 
 def get_tsne_fig(input_title:str,input_sentence:str):
   return "https://www.mathworks.com/help/examples/stats/win64/ChangeTsneSettingsExample_01.png"
@@ -73,35 +121,18 @@ def insert_or_update_models(model):
   model_id="0"
   return ("success",model_id)
 
-def get_model_from_db(model_id:str):
-  model=service.select_model(model_id)
-  return model
+def get_most_similar_words(word):
+  result={"word1":0.8,
+          "word2":0.7,
+          "word3":0.6,
+          "word4":0.5,
+          "word5":0.4,
+          }
+  return result
 
-def get_auto_abstract_history():
-  histories=[
-              {
-              "history_id":0,
-              "title":"0000000000000000",
-              "content":"ContentContentContentContentContentContent",
-              "timestamp":"timestamp",
-              "model_id":0
-              },
-              {
-              "history_id":1,
-              "title":"111111111111111",
-              "content":"ContentContentContentContentContentContent",
-              "timestamp":"timestamp",
-              "model_id":1
-              },
-              {
-              "history_id":2,
-              "title":"2222222222222222",
-              "content":"ContentContentContentContentContentContent",
-              "timestamp":"timestamp",
-              "model_id":2
-              }]
-  print(history)
-  return histories
+def get_tsne_fig(word):
+  fig='static/img/NLP.jpg'
+  return fig
 #hard code
 
 if __name__ == "__main__":
