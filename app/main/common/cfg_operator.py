@@ -12,7 +12,7 @@ class Configuration:
         super().__init__()
         self.path = path
         self.configs = ConfigParser()
-        self.configs.read(path)
+        self.configs.read(path, encoding='utf-8')
 
     def get_all_configs(self):
         """
