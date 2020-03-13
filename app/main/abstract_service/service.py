@@ -1,17 +1,19 @@
 # 业务逻辑层
 
-from app.main.abstract_service import db
-import time
 import pprint
+import random
+import time
 
+import gensim
 import matplotlib.pyplot as plt
 from gensim.models import word2vec
 from sklearn.manifold import TSNE
-import random
-import sys
-import gensim
+
+from app.main.abstract_service import db
+
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
 
 # 插入历史
 def insert_history(history):
@@ -23,19 +25,22 @@ def insert_history(history):
             auto_abstract_history(title, content, abstract, similarity, model_id, timestamp)
             values(%s, %s, %s, %s, %s, %s)
     """
-    insert_history_tuple = (history["title"], history["content"], history["abstract"],history["similarity"], history["model_id"], time_now)
+    insert_history_tuple = (
+        history["title"], history["content"], history["abstract"], history["similarity"], history["model_id"], time_now)
     response = db.insert_with_param(sql, insert_history_tuple)
     return response[0][0]
+
 
 # 按id查询历史
 def select_history_byid(history_id):
     sql = "select * from auto_abstract_history where history_id = " + str(history_id)
     history = db.query_data(sql)[0]
     return history
- 
+
+
 # 按查询参数模糊查询所有历史
 def select_history(history: dict) -> list:
-    sql = "select * from auto_abstract_history where title like %s and content like %s"\
+    sql = "select * from auto_abstract_history where title like %s and content like %s" \
           "and abstract like %s and similarity like %s and model_id like %s and timestamp like %s"
     # 处理无key情况
     if not history.__contains__("title"):
@@ -49,7 +54,7 @@ def select_history(history: dict) -> list:
 
     if not history.__contains__("similarity"):
         history["similarity"] = ""
-        
+
     if not history.__contains__("model_id"):
         history["model_id"] = ""
 
@@ -61,18 +66,18 @@ def select_history(history: dict) -> list:
     abstract_like = "%" + history["abstract"] + "%"
     similarity = "%" + history["similarity"] + "%"
     model_id = "%" + history["model_id"] + "%"
-    timestamp = "%" +  history["timestamp"] + "%"
+    timestamp = "%" + history["timestamp"] + "%"
 
     select_history_list = [title_like, content_like, abstract_like, similarity, model_id, timestamp]
     histories = db.query_data_with_param(sql, select_history_list)
     return histories
 
 
-
 def select_history_all():
     sql = "select * from auto_abstract_history"
     histories = db.query_data(sql)
     return histories
+
 
 # 从数据库查出二进制数据写到硬盘./picture
 
@@ -91,9 +96,8 @@ def insert_model(model):
             """
     insert_model_tuple = (model["parameters"], model["input"], model["output"], model["picture"], model["timestamp"])
     print(sql)
-    ret=db.insert_with_param(sql, insert_model_tuple)
+    ret = db.insert_with_param(sql, insert_model_tuple)
     return ret
-
 
 
 # 根据id查询model
@@ -119,19 +123,23 @@ def store_picture():
     print(len(data))
     print(data)
 
+
 model = None
-def init_wordvecs(word_vector_model_path): #初始化词向量模型
+
+
+def init_wordvecs(word_vector_model_path):  # 初始化词向量模型
     model = gensim.models.Word2Vec.load(word_vector_model_path)
     return model
 
-def tsne_plot(query_word, output_path, model, word_num=200):#画关于query_word的tsne图，这个query word 会被显示在图中
-    #图会被保存在output_path里面
+
+def tsne_plot(query_word, output_path, model, word_num=200):  # 画关于query_word的tsne图，这个query word 会被显示在图中
+    # 图会被保存在output_path里面
     "Creates and TSNE model and plots it"
     for pth in range(1, 2):
         labels = []
         tokens = []
         total_size = len(model.wv.vocab)
-        probability = word_num * 1.0/total_size
+        probability = word_num * 1.0 / total_size
         for word in model.wv.vocab:
             r = random.random()
             if r <= probability:
@@ -150,7 +158,7 @@ def tsne_plot(query_word, output_path, model, word_num=200):#画关于query_word
 
         plt.figure(figsize=(16, 16))
         for i in range(len(x)):
-            plt.scatter(x[i] ,y[i])
+            plt.scatter(x[i], y[i])
             plt.annotate(labels[i],
                          xy=(x[i], y[i]),
                          xytext=(5, 2),
@@ -159,6 +167,7 @@ def tsne_plot(query_word, output_path, model, word_num=200):#画关于query_word
                          va='bottom')
         # plt.show()
         plt.savefig(output_path, dpi=300)
+
 
 def query_similarity(query_word, output_pic_path, model):
     """
@@ -177,9 +186,23 @@ def query_similarity(query_word, output_pic_path, model):
         tsne_plot(query_word, output_pic_path, model, word_num=200)
     except:
         return False
-    #print(dict(lst))
+    # print(dict(lst))
     return dict(lst)
 
+
+def insert_model_training_data(model: dict):
+    sql = """
+            insert
+            into
+            auto_abstract_model(word_embedding_feature,top_num, coefficients, exceptions, variances)
+            values(%s, %s, %s, %s, %s)
+            """
+    insert_model_tuple = (
+        model["word_embedding_feature"], model["top_num"], str(model["coefficients"]), str(model["exceptions"]),
+        str(model["variances"]))
+    print(sql)
+    ret = db.insert_with_param(sql, insert_model_tuple)
+    return ret
 
 
 if __name__ == '__main__':
