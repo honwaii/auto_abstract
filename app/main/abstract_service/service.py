@@ -4,6 +4,15 @@ from app.main.abstract_service import db
 import time
 import pprint
 
+import matplotlib.pyplot as plt
+from gensim.models import word2vec
+from sklearn.manifold import TSNE
+import random
+import sys
+import gensim
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
 # 插入历史
 def insert_history(history):
     # 系统现在时间
@@ -109,6 +118,68 @@ def store_picture():
         fw.close
     print(len(data))
     print(data)
+
+model = None
+def init_wordvecs(word_vector_model_path): #初始化词向量模型
+    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    return model
+
+def tsne_plot(query_word, output_path, model, word_num=200):#画关于query_word的tsne图，这个query word 会被显示在图中
+    #图会被保存在output_path里面
+    "Creates and TSNE model and plots it"
+    for pth in range(1, 2):
+        labels = []
+        tokens = []
+        total_size = len(model.wv.vocab)
+        probability = word_num * 1.0/total_size
+        for word in model.wv.vocab:
+            r = random.random()
+            if r <= probability:
+                tokens.append(model[word])
+                labels.append(word)
+        tokens.append(model[query_word])
+        labels.append(query_word)
+        tsne_model = TSNE(perplexity=40, n_components=2, init='pca', n_iter=2500, random_state=23)
+        new_values = tsne_model.fit_transform(tokens)
+
+        x = []
+        y = []
+        for value in new_values:
+            x.append(value[0])
+            y.append(value[1])
+
+        plt.figure(figsize=(16, 16))
+        for i in range(len(x)):
+            plt.scatter(x[i] ,y[i])
+            plt.annotate(labels[i],
+                         xy=(x[i], y[i]),
+                         xytext=(5, 2),
+                         textcoords='offset points',
+                         ha='right',
+                         va='bottom')
+        # plt.show()
+        plt.savefig(output_path, dpi=300)
+
+def query_similarity(query_word, output_pic_path, model):
+    """
+    根据输入的query_word ，返回一个字符串，字符串包含和这个query_word最相似的10个词以及相似度，
+    并且将这个query_word以及随机选取的200个单词用tsne画图，图片保存在output_pic_path里面
+    :param query_word: 查询词
+    :param output_pic_path: 输出的tsne图的地址
+    :param model_path: 词向量模型的地址
+    :return:
+    """
+    # if model is None:
+    #     return "You should initialized the word_vector model first by calling init_wordvects"
+    # else:
+    try:
+        lst = model.most_similar(positive=[query_word], topn=10)
+        tsne_plot(query_word, output_pic_path, model, word_num=200)
+    except:
+        return False
+    #print(dict(lst))
+    return dict(lst)
+
 
 
 if __name__ == '__main__':
