@@ -4,14 +4,17 @@
 # @Author  : honwaii
 # @Email   : honwaii@126.com
 # @File    : model_trainning.py
-import re
 import linecache
+import re
+from functools import reduce
+
 import numpy as np
 import pandas as pd
-from functools import reduce
-from app.main.common.cfg_operator import configuration
 
 from app.main.abstract_model import abstract_model
+from app.main.abstract_model.domain.essay import Essay
+from app.main.abstract_service import service
+from app.main.common.cfg_operator import configuration
 
 
 def get_sentences(start: int, size: int, is_all: bool):
@@ -40,31 +43,23 @@ def handle_essay2sentences():
     # 0. 从文件读取句子
     # Columns: [id, author, result, content, feature, title, url]
     path = configuration.get_config('sentences_path')
-    content = pd.read_csv(path, encoding='gb18030', usecols=['content', 'title'], iterator=True)
+    content = pd.read_csv(path, encoding='gb18030', usecols=['content'], iterator=True)
     index = 0
-    chunk_size = 15
+    chunk_size = 20
     chunks = []
     loop = True
     while loop:
         try:
             chunk = content.get_chunk(chunk_size)
-            # start_index = index * chunk_size
+            start_index = index * chunk_size
             for i in range(chunk.size):
-                print(len(chunk['title']))
-                print(len(chunk['content']))
-                title =chunk['title'][i]
-                essay = chunk['content'][i]
-                # essay = chunk.at[start_index + i, "content"]
-                # title = chunk.at[start_index + i, "title"]
+                essay = chunk.at[start_index + i, "content"]
                 # chunks.append(chunk.at[start_index + i, "content"])
-                # if isinstance(essay, str):
-                # sentences = cut_sentences(essay)
-                # save_sentence(sentences)
-                print('title:'+title)
-                print('content:'+str(essay).strip())
+                if isinstance(essay, str):
+                    # sentences = cut_sentences(essay)
+                    save_sentence([essay])
             index += 1
             if index == 2:
-                print('ok')
                 break
         except StopIteration:
             print("read finish.")
@@ -119,6 +114,9 @@ def save_sentences_embedding(sentences: list, embedding: list):
     return
 
 
+embedding_size = 100
+
+
 def get_knn_vector(sentence: str, distance: int, sentence_vector_lookup: dict, sentences: list):
     vector = sentence_vector_lookup[sentence]
     if distance <= 0:
@@ -154,25 +152,60 @@ def optimize(title_vector, content_vector):
 
 def get_essays():
     essays_path = configuration.get_config('essays_path')
-    contents = pd.read_csv(essays_path, encoding='gb18030', usecols=['content', 'title'], nrows=10000)
-    print(contents.describe())
+    contents = pd.read_csv(essays_path, encoding='gb18030', usecols=['content', 'title'])
+    essays = []
     for each in contents.iterrows():
-
-        break
-    return
+        content = each[1]['content']
+        title = each[1]['title']
+        if title is None or not isinstance(title, str):
+            title = ''
+        if content is None or not isinstance(content, str):
+            content = ''
+        essay = Essay(title=title, content=content)
+        essays.append(essay)
+    return essays
 
 
 def find_most_suitable_model():
     coefficient_init = 0.0
-
-    for num in range(50, 500, 50):
-        model_name = 'word_embedding_model_' + str(num)
-        model_path = './model/' + model_name
-        model = abstract_model.load_word_vector_model(model_path)
-
+    # 获取每个模型的参数
+    models = []
+    # for num in range(50, 500, 50):
+    #     model_name = 'word_embedding_model_' + str(num)
+    num = 100
+    # model_path = './model/' + model_name
+    model_path = './model/wiki_xinwen_wordvector.model'
+    word_embedding = abstract_model.load_word_vector_model(model_path)
+    essays_list = get_essays()
+    word_frequency_dict = abstract_model.get_words_frequency_dict()
+    for top_num in range(5, 10, 1):
+        for coefficient in np.arange(0, 1.0, 0.01):
+            similarities = []
+            result = {'word_embedding_feature': num, 'top_num': top_num, 'coefficients': coefficient}
+            for essay in essays_list:
+                abstract = abstract_model.get_abstract(title=essay.title, content=essay.content,
+                                                       word_embedding=word_embedding,
+                                                       word_frequency_dict=word_frequency_dict,
+                                                       top_num=top_num,
+                                                       coefficient=coefficient)
+                # model = Model(num, top_num, coefficient, abstract)
+                if abstract.similarity is not None:
+                    similarities.append(abstract.similarity)
+                else:
+                    print('异常文章和内容: ')
+                    print(essay.title)
+                    print(essay.content)
+                # if len(similarities) == 5:
+                #     break
+            exception = np.mean(similarities)
+            var = np.var(similarities)
+            result['exceptions'] = exception
+            result['variances'] = var
+            service.insert_model_training_data(result)
     return
 
 
-embedding_size = 100
-# get_essays()
-handle_essay2sentences()
+find_most_suitable_model()
+# embedding_size = 100
+# essays = get_essays()
+# handle_essay2sentences()
