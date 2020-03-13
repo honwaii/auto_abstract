@@ -21,16 +21,17 @@ import sys
 sys.path.append('E:\\NLPproject\\auto_abstract')
 
 
-def load_word_vector_model():
+def load_word_vector_model(path=None):
     """ 加载已训练的词向量模型
     Returns
     -------
         加载的模型
     """
-    word_vector_model_path = configuration.get_config('word_vector_model_path')
-    print("加载的词向量的路径: " + word_vector_model_path)
+    if path is None:
+        path = configuration.get_config('word_vector_model_path')
+    print("加载的词向量的路径: " + path)
     # 加载word2vec模型: 保存的形式为二进制
-    model = gensim.models.Word2Vec.load(word_vector_model_path)
+    model = gensim.models.Word2Vec.load(path)
     # 加载glove转换的模型: 保存的为文本形式
     # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
     return model

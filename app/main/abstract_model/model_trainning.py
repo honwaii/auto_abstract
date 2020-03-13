@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 from app.main.common.cfg_operator import configuration
+
 from app.main.abstract_model import abstract_model
 
 
@@ -39,23 +40,31 @@ def handle_essay2sentences():
     # 0. 从文件读取句子
     # Columns: [id, author, result, content, feature, title, url]
     path = configuration.get_config('sentences_path')
-    content = pd.read_csv(path, encoding='gb18030', usecols=['content'], iterator=True)
+    content = pd.read_csv(path, encoding='gb18030', usecols=['content', 'title'], iterator=True)
     index = 0
-    chunk_size = 20
+    chunk_size = 15
     chunks = []
     loop = True
     while loop:
         try:
             chunk = content.get_chunk(chunk_size)
-            start_index = index * chunk_size
+            # start_index = index * chunk_size
             for i in range(chunk.size):
-                essay = chunk.at[start_index + i, "content"]
+                print(len(chunk['title']))
+                print(len(chunk['content']))
+                title =chunk['title'][i]
+                essay = chunk['content'][i]
+                # essay = chunk.at[start_index + i, "content"]
+                # title = chunk.at[start_index + i, "title"]
                 # chunks.append(chunk.at[start_index + i, "content"])
-                if isinstance(essay, str):
-                    sentences = cut_sentences(essay)
-                    save_sentence(sentences)
+                # if isinstance(essay, str):
+                # sentences = cut_sentences(essay)
+                # save_sentence(sentences)
+                print('title:'+title)
+                print('content:'+str(essay).strip())
             index += 1
             if index == 2:
+                print('ok')
                 break
         except StopIteration:
             print("read finish.")
@@ -142,10 +151,28 @@ def optimize(title_vector, content_vector):
     # b = b - learning_rate * db
     return
 
-def find_most_optimize_model():
+
+def get_essays():
+    essays_path = configuration.get_config('essays_path')
+    contents = pd.read_csv(essays_path, encoding='gb18030', usecols=['content', 'title'], nrows=10000)
+    print(contents.describe())
+    for each in contents.iterrows():
+
+        break
+    return
+
+
+def find_most_suitable_model():
     coefficient_init = 0.0
-    model = abstract_model.load_word_vector_model()
+
+    for num in range(50, 500, 50):
+        model_name = 'word_embedding_model_' + str(num)
+        model_path = './model/' + model_name
+        model = abstract_model.load_word_vector_model(model_path)
+
     return
 
 
 embedding_size = 100
+# get_essays()
+handle_essay2sentences()
