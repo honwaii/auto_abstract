@@ -8,6 +8,8 @@ import json
 
 from app.main.abstract_service import db
 from app.main.abstract_service import service
+
+most_similar_model=service.init_wordvecs(word_vector_model_path="../abstract_model/model/wiki_xinwen_wordvector.model")
 # 视图层
 
 app = Flask(__name__)
@@ -41,9 +43,14 @@ def most_similar_words():
 
 @app.route("/mostsim_words/<word>")
 def show_most_similar_words(word):
-  result=get_most_similar_words(word)
-  tsne_fig=get_tsne_fig(word)
-  return render_template("most_similar_words.html",word=word,ms_words=result,tsne_fig=tsne_fig)
+  tsne_fig_name=gen_tsne_fig_name(word)
+  tsne_fig_path="./static/"+tsne_fig_name
+  result=get_most_similar_words(word=word,output_pic_path=tsne_fig_path,model=most_similar_model)
+  if result:
+    return render_template("most_similar_words.html",word=word,ms_words=result,tsne_fig=tsne_fig_path)
+  else:
+    return redirect(url_for('most_similar_words'))
+
 
 @app.route("/history")
 def history():
@@ -121,17 +128,14 @@ def insert_or_update_models(model):
   model_id="0"
   return ("success",model_id)
 
-def get_most_similar_words(word):
-  result={"word1":0.8,
-          "word2":0.7,
-          "word3":0.6,
-          "word4":0.5,
-          "word5":0.4,
-          }
+def get_most_similar_words(word,output_pic_path='./picture/tsne/tsne.png',model=None):
+
+  result=service.query_similarity(query_word=word, output_pic_path=output_pic_path, model=model)
+  #print(type(result))
   return result
 
-def get_tsne_fig(word):
-  fig='static/img/NLP.jpg'
+def gen_tsne_fig_name(word):
+  fig='tsne.png'
   return fig
 #hard code
 
