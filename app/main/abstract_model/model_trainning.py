@@ -10,7 +10,7 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
-
+import random
 from app.main.abstract_model import abstract_model
 from app.main.abstract_model.domain.essay import Essay
 from app.main.abstract_service import service
@@ -150,19 +150,20 @@ def optimize(title_vector, content_vector):
     return
 
 
-def get_essays():
+def get_essays() -> list:
     essays_path = configuration.get_config('essays_path')
     contents = pd.read_csv(essays_path, encoding='gb18030', usecols=['content', 'title'])
     essays = []
     for each in contents.iterrows():
-        content = each[1]['content']
-        title = each[1]['title']
+        content = str(each[1]['content']).strip()
+        title = str(each[1]['title']).strip()
         if title is None or not isinstance(title, str):
             title = ''
         if content is None or not isinstance(content, str):
             content = ''
         essay = Essay(title=title, content=content)
         essays.append(essay)
+    print("公获取到的文章数:" + str(len(essays)))
     return essays
 
 
@@ -178,23 +179,26 @@ def find_most_suitable_model():
     word_embedding = abstract_model.load_word_vector_model(model_path)
     essays_list = get_essays()
     word_frequency_dict = abstract_model.get_words_frequency_dict()
+    batch_size = 100
     for top_num in range(5, 10, 1):
-        for coefficient in np.arange(0, 1.0, 0.01):
+        for coefficient in np.arange(0.2, 1.0, 0.02):
             similarities = []
             result = {'word_embedding_feature': num, 'top_num': top_num, 'coefficients': coefficient}
-            for essay in essays_list:
+            random.shuffle(essays_list)
+            batch_essays = essays_list[:batch_size]
+            for essay in batch_essays:
                 abstract = abstract_model.get_abstract(title=essay.title, content=essay.content,
                                                        word_embedding=word_embedding,
                                                        word_frequency_dict=word_frequency_dict,
                                                        top_num=top_num,
                                                        coefficient=coefficient)
                 # model = Model(num, top_num, coefficient, abstract)
-                if abstract.similarity is not None:
-                    similarities.append(abstract.similarity)
-                else:
+                if np.math.isnan(abstract.similarity) or abstract.similarity is None:
                     print('异常文章和内容: ')
                     print(essay.title)
                     print(essay.content)
+
+                similarities.append(abstract.similarity)
                 # if len(similarities) == 5:
                 #     break
             exception = np.mean(similarities)

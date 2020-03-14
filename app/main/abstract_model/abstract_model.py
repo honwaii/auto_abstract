@@ -78,7 +78,7 @@ def sentence_to_vec(sentence_list: List[Sentence], feature_size: int, look_table
             vs = np.add(vs, np.multiply(a_value, word.vector))  # vs += sif * word_vector
             # 找不到某个词的情况下，会出现得到的词向量为0
             # if np.sum(vs) == 0:
-            #     temp = np.ones(embedding_size)
+            #     temp = np.ones(feature_size)
             #     vs = np.add(temp, np.multiply(a_value, word.vector))
             #     print(word.text)
         vs = np.divide(vs, sentence_length)  # weighted average
@@ -170,10 +170,10 @@ def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title
     most_similar_sens = sorted_list[:top_num]
 
     indexes = []
-    top_sentences_with_similarity = []
+    top_sentences_with_similarity = {}
     for each in most_similar_sens:
         indexes.append(sentences.index(each))
-        top_sentences_with_similarity.append((each, 1 - similar_sentences[each]))
+        top_sentences_with_similarity[each] = 1 - similar_sentences[each]
     indexes = sorted(indexes)
     result = []
 
@@ -205,16 +205,18 @@ def get_content_sentences(contents: str):
     return sentences
 
 
+word_embedding = load_word_vector_model()
+word_frequency_dict = get_words_frequency_dict()
+
+
 def summarise(title: str, content: str) -> Abstract:
     if len(title.strip()) <= 0:
         abstract = '请正确填写文章和标题.'
-        return Abstract(abstract, 0, [(abstract, 0)])
+        return Abstract(abstract, 0, {abstract: 0})
     if len(content) < 10:
-        return Abstract(content, 1, [(content, 1)])
+        return Abstract(content, 1, {content: 1})
 
-    word_embedding = load_word_vector_model()
-    word_frequency_dict = get_words_frequency_dict()
-    result = get_abstract(title, content, word_embedding, word_frequency_dict, 10, 0.5)
+    result = get_abstract(title, content, word_embedding, word_frequency_dict, 5, 0.2)
     print(result.similarity)
     print(result.abstract)
     return result
@@ -224,15 +226,15 @@ def get_abstract(title: str, content: str, word_embedding: Word2Vec, word_freque
                  coefficient: float) -> Abstract:
     if len(title.strip()) <= 0:
         abstract = '请正确填写文章和标题.'
-        return Abstract(abstract, 0, [(abstract, 0)])
+        return Abstract(abstract, 0, {abstract: 0})
     if len(content.strip()) < 10:
-        return Abstract(content, 1, [(content, 1)])
+        return Abstract(content, 1, {content: 1})
     try:
-        print('compute sentences vector')
+        print('compute sentences vector.')
         sentence_vectors_lookup, sentences = get_sentences_vector(content, word_embedding, word_frequency_dict)
-        print('compute title and content vector...')
+        print('compute title and content vector.')
         title_content_vector = get_content_vector([title, content], word_embedding, word_frequency_dict)
-        print('find most similar sentences:')
+        # print('find most similar sentences:')
         most_similar_sens, top_sentences_with_similarity = get_most_similar_sentences(top_num, sentence_vectors_lookup,
                                                                                       title_content_vector, sentences,
                                                                                       coefficient)
@@ -287,7 +289,7 @@ def test():
         file.close()
         title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
         result = summarise(title, contents)
-        # print(result)
+        print(result.abstract)
         # print(result.similarity)
         # print(result.top_sentences)
 
