@@ -10,18 +10,28 @@
       <div class="row mt-3 mx-2">
         <h2>相似词查询</h2>
       </div>
-      <form action="/submit_word" method="post">
+      
+      <form action="/submit_word" method="post" onsubmit="toggle_spinner()">
 
         <div class="row mx-2">
           <div id="input_word_div" class="col">
             <label for="input_word">请输入想查询的词：</label>
+            {% if message %}
+              <div class="alert alert-warning" role="alert">
+                {{message}}
+              </div>
+            {% endif %}
             <textarea name="input_word" class="form-control" id="input_word" rows="1">{% if word %}{{word}}{% endif %}</textarea>
+            
           </div>
         </div>
   
         <div class="row py-3 mx-2">
           <div id="submit_buttom_div" class="col">
-            <button id="submit_btn" type="submit" name="submit" type="button" class="btn btn-dark">Submit</button>
+            <button id="submit_btn" type="submit" name="submit" type="button" class="btn btn-dark" >Submit</button>
+            <div id="spinner" class="spinner-grow spinner-grow-sm invisible" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
           </div>
         </div>
       </form>
@@ -40,31 +50,33 @@
                   </a>
                 </p>
               </div>
-                
-                <div class="collapse p-1 " id="ms_word">
-                    <table class="table rounded">
-                      <thead class="thead-light">
-                        <tr>
-                          <th scope="col">相似词</th>
-                          <th scope="col">相似度</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                          {% for ms_word in ms_words %}
-                            <tr>
-                              <th scope="row">{{ms_word}}</th>
-                              <td>{{ms_words[ms_word]}}</td>
-                              </tr>
-                          {% endfor%}
-                      </tbody>
-                    </table>
+              <div class="accordion" id="output_content">
+                <div class="collapse p-1 " id="ms_word" data-parent="#output_content">
+                  <table class="table rounded">
+                    <thead class="thead-light">
+                      <tr>
+                        <th scope="col">相似词</th>
+                        <th scope="col">相似度</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        {% for ms_word in ms_words %}
+                          <tr>
+                            <th scope="row">{{ms_word}}</th>
+                            <td>{{ms_words[ms_word]}}</td>
+                            </tr>
+                        {% endfor%}
+                    </tbody>
+                  </table>
+              </div>
+              
+              <div class="collapse p-1" id="tsne_fig" data-parent="#output_content">
+                <div class="card card-body">
+                  <img class="w-100" src="{{url_for('static', filename='tsne.png')}}">
                 </div>
+              </div>
+              </div>
                 
-                <div class="collapse p-1" id="tsne_fig">
-                  <div class="card card-body">
-                    <img class="w-100" src="{{url_for('static', filename='tsne.png')}}">
-                  </div>
-                </div>
                 
             </div>
           </div>
@@ -78,4 +90,10 @@
 
     </div>
   </main>
+  <script>
+    function toggle_spinner(){
+      $("#spinner").removeClass('invisible');
+      $("#spinner").addClass('visible');
+    }
+  </script>
 {% endblock %}

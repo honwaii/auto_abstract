@@ -40,40 +40,43 @@
       <div class="card w-80">
         <h5 class="card-header text-white bg-dark">Output</h5>
         <div class="card-body">
-          <div class="row">
-            <p>
-              <a class="btn btn-dark" data-toggle="collapse" href="#abstract" role="button" aria-expanded="false" aria-controls="abstract">
-                内容摘要
-              </a>
-              <a class="btn btn-dark" data-toggle="collapse" href="#mostsimilarsentence" role="button" aria-expanded="false" aria-controls="mostsimilarsentence">
-                重要性最高的句子
-              </a>
-            </p>
-          </div>
-            <div class="collapse p-1" id="abstract">
-              <div class="card card-body bg-light">
-                <p class="card-text"> {{model["abstract"]}}</p>
+          <div class="accordion" id="output_content">
+            <div class="row">
+              <p>
+                <a class="btn btn-dark" data-toggle="collapse" href="#abstract" role="button" aria-expanded="false" aria-controls="abstract">
+                  内容摘要
+                </a>
+                <a class="btn btn-dark" data-toggle="collapse" href="#mostsimilarsentence" role="button" aria-expanded="false" aria-controls="mostsimilarsentence">
+                  重要性最高的句子
+                </a>
+              </p>
+            </div>
+              <div class="collapse p-1" id="abstract" data-parent="#output_content">
+                <div class="card card-body bg-light">
+                  <p class="card-text"> {{model["abstract"]}}</p>
+                </div>
               </div>
-            </div>
-            
-            <div class="collapse p-1 " id="mostsimilarsentence">
-                <table class="table rounded">
-                  <thead class="thead-light">
-                    <tr>
-                      <th scope="col">句子</th>
-                      <th scope="col">相似度</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {% for sentence in model["similarity"] %}
-                        <tr>
-                          <th scope="row">{{sentence}}</th>
-                          <td>{{model["similarity"][sentence]}}</td>
-                          </tr>
-                      {% endfor%}
-                  </tbody>
-                </table>
-            </div>
+              
+              <div class="collapse p-1 " id="mostsimilarsentence" data-parent="#output_content">
+                  <table class="table rounded">
+                    <thead class="thead-light">
+                      <tr>
+                        <th scope="col">句子</th>
+                        <th scope="col">相似度</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        {% for sentence in model["similarity"] %}
+                          <tr>
+                            <th scope="row">{{sentence}}</th>
+                            <td>{{model["similarity"][sentence]}}</td>
+                            </tr>
+                        {% endfor%}
+                    </tbody>
+                  </table>
+              </div>
+          </div>
+          
             
 
             

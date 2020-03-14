@@ -8,7 +8,7 @@ from flask import Flask, render_template, request, url_for, redirect
 from app.main.abstract_service import service
 
 most_similar_model = service.init_wordvecs(
-    word_vector_model_path="E:/projects/2020/auto_abstract/app/main/abstract_model/model/wiki_xinwen_wordvector.model")
+    word_vector_model_path="../abstract_model/model/wiki_xinwen_wordvector.model")
 # 视图层
 
 app = Flask(__name__)
@@ -24,6 +24,9 @@ def index():
 def auto_abs():
     return render_template("auto_abs.html")
 
+@app.route("/auto_abs_error/<message>")
+def error_auto_abs(message=None):
+    return render_template("auto_abs.html",message=message)
 
 @app.route("/show_auto_abs_result/<history_id>")
 def show_auto_abs_result(history_id):
@@ -39,21 +42,27 @@ def show_auto_abs_result(history_id):
 
     return render_template("auto_abs_result.html", model=view_model)
 
-
-@app.route("/mostsim_words")
+@app.route("/mostsim_words/")
 def most_similar_words():
     return render_template("most_similar_words.html")
+
+@app.route("/error_mostsim_words/<message>")
+def error_most_similar_words(message=None):
+    return render_template("most_similar_words.html",message=message)
 
 
 @app.route("/mostsim_words/<word>")
 def show_most_similar_words(word):
+    print("show_most_similar_words")
     tsne_fig_name = gen_tsne_fig_name(word)
     tsne_fig_path = "./static/" + tsne_fig_name
     result = get_most_similar_words(word=word, output_pic_path=tsne_fig_path, model=most_similar_model)
     if result:
         return render_template("most_similar_words.html", word=word, ms_words=result, tsne_fig=tsne_fig_path)
     else:
-        return redirect(url_for('most_similar_words'))
+        message="sorry~暂时没有关于\""+word+"\"的资料。"
+        print(message)
+        return redirect(url_for('error_most_similar_words',message=message))
 
 
 @app.route("/history")
@@ -66,7 +75,7 @@ def history_page(page=1):
     page = int(page)
     history_number_in_a_page = 8
     histories = service.select_history_all()
-    print(type(histories), type(len(histories)))
+    #print(type(histories), type(len(histories)))
     page_num = math.ceil(int(len(histories)) / history_number_in_a_page)
     start_id = (page - 1) * history_number_in_a_page + 1
     if page == page_num:
@@ -84,24 +93,28 @@ def submit_input():
     print(request.form)
     title = request.form.get("input_title")
     content = request.form.get("input_content")
+    if title=="" or content=="":
+        message="请正确输入标题与内容。"
+        return redirect(url_for('error_auto_abs', message=message))
     # 调用模型接口
-    output = get_output(title, content)
-    abstract = service.get_abstract_result(title, content)
-
-    history = {}
-    history["title"] = title
-    history["content"] = content
-    history["abstract"] = abstract.abstract
-    history["top_sentences"] = abstract.top_sentences
-    history["similarity"] = abstract.similarity
-    history["model_id"] = 158
-    response = service.insert_history(history)
-    print(response)
-    if response != 0:
-        history_id = response
-        return redirect(url_for('show_auto_abs_result', history_id=history_id))
     else:
-        return render_template("auto_abs.html")
+        abstract = service.get_abstract_result(title, content)
+
+        history = {}
+        history["title"] = title
+        history["content"] = content
+        history["abstract"] = abstract.abstract
+        history["top_sentences"] = abstract.top_sentences
+        history["similarity"] = abstract.similarity
+        history["model_id"] = 158
+        response = service.insert_history(history)
+        print(response)
+        if response != 0:
+            history_id = response
+            return redirect(url_for('show_auto_abs_result', history_id=history_id))
+        else:
+            message="不好意思，出了点问题，请再次提交。"
+            return redirect(url_for('error_auto_abs', message=message))
 
 
 @app.route("/submit_word", methods=["POST"])
@@ -109,7 +122,8 @@ def submit_word():
     print(request.form)
     input_word = request.form.get("input_word")
     if input_word == "":
-        return redirect(url_for('most_similar_words'))
+        message="请输入词语"
+        return redirect(url_for('error_most_similar_words',message=message))
     else:
         return redirect(url_for('show_most_similar_words', word=input_word))
 
