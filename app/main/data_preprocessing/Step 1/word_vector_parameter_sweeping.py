@@ -75,4 +75,4 @@ if __name__ == "__main__":
     explore_sg_cbow(input_text_path)
     explore_iter(input_text_path)
     explore_workers(input_text_path)
-    # query_words("F:/BaiduNetdiskDownload/NLP-Project/xinwen/wiki_xinwen_wordvector.model")
+    # query_words("wiki_xinwen_wordvector.model")
