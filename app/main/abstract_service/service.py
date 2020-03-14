@@ -1,5 +1,5 @@
 # 业务逻辑层
-
+import json
 import pprint
 import random
 import time
@@ -10,6 +10,8 @@ from gensim.models import word2vec
 from sklearn.manifold import TSNE
 
 from app.main.abstract_service import db
+from app.main.abstract_model import abstract_model
+from app.main.abstract_model.domain.abstract import Abstract
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
@@ -22,11 +24,12 @@ def insert_history(history):
     sql = """
             insert
             into
-            auto_abstract_history(title, content, abstract, similarity, model_id, timestamp)
-            values(%s, %s, %s, %s, %s, %s)
+            auto_abstract_history(title, content, abstract, similarity, model_id, top_sentences, timestamp)
+            values(%s, %s, %s, %s, %s, %s, %s)
     """
     insert_history_tuple = (
-        history["title"], history["content"], history["abstract"], history["similarity"], history["model_id"], time_now)
+        history["title"], history["content"], history["abstract"], str(history["similarity"]), history["model_id"],
+        json.dumps(history['top_sentences']), time_now)
     response = db.insert_with_param(sql, insert_history_tuple)
     return response[0][0]
 
@@ -34,6 +37,7 @@ def insert_history(history):
 # 按id查询历史
 def select_history_byid(history_id):
     sql = "select * from auto_abstract_history where history_id = " + str(history_id)
+    print(sql)
     history = db.query_data(sql)[0]
     return history
 
@@ -201,8 +205,14 @@ def insert_model_training_data(model: dict):
         model["word_embedding_feature"], model["top_num"], str(model["coefficients"]), str(model["exceptions"]),
         str(model["variances"]))
     print(sql)
+    print(insert_model_tuple)
     ret = db.insert_with_param(sql, insert_model_tuple)
     return ret
+
+
+def get_abstract_result(title: str, content: str) -> Abstract:
+    abstract = abstract_model.summarise(title, content)
+    return abstract
 
 
 if __name__ == '__main__':

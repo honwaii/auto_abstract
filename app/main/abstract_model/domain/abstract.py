@@ -7,7 +7,7 @@
 
 
 class Abstract:
-    def __init__(self, abstract: str, similarity: float, top_sentences: list):
+    def __init__(self, abstract: str, similarity: float, top_sentences: dict):
         self.abstract = abstract
         self.similarity = similarity
         self.top_sentences = top_sentences

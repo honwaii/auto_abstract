@@ -1,5 +1,7 @@
 import pymysql
 import pprint
+
+
 # 持久层
 
 def get_conn():
@@ -57,12 +59,16 @@ def insert_with_param(sql, param):
             return cursor.fetchall()
         else:
             return 0
+    # except Exception:
+        # print("error")
+        # return 0
     finally:
         conn.close()
 
+
 if __name__ == '__main__':
     sql = "insert user (name, sex, age, email) values ('John', 'man', 30, 'John@gmail.com')"
-    #insert_or_update_data(sql)
+    # insert_or_update_data(sql)
     sql = "select * from sgrade"
     data = query_data(sql)
     pprint.pprint(data)
