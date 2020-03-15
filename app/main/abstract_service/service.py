@@ -198,14 +198,12 @@ def insert_model_training_data(model: dict):
     sql = """
             insert
             into
-            auto_abstract_model(word_embedding_feature,top_num, coefficients, exceptions, variances)
-            values(%s, %s, %s, %s, %s)
+            auto_abstract_model(word_embedding_feature,top_num, coefficients, exceptions, variances,batch_size)
+            values(%s, %s, %s, %s, %s, %s)
             """
     insert_model_tuple = (
         model["word_embedding_feature"], model["top_num"], str(model["coefficients"]), str(model["exceptions"]),
-        str(model["variances"]))
-    print(sql)
-    print(insert_model_tuple)
+        str(model["variances"]), model['batch_size'])
     ret = db.insert_with_param(sql, insert_model_tuple)
     return ret
 

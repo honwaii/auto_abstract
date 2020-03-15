@@ -83,9 +83,10 @@ def sentence_to_vec(sentence_list: List[Sentence], feature_size: int, look_table
             #     print(word.text)
         vs = np.divide(vs, sentence_length)  # weighted average
         sentence_set.append(vs)  # add to our existing re-calculated set of sentences
-
     # calculate PCA of this sentence set
-    # pca = PCA(n_components=embedding_size)
+    # pca = PCA(n_components=feature_size)
+    if len(sentence_list) < 2:
+        return sentence_set
     pca = PCA()
     pca.fit(np.array(sentence_set))
     u = pca.components_[0]  # the PCA vector
@@ -205,23 +206,6 @@ def get_content_sentences(contents: str):
     return sentences
 
 
-word_embedding = load_word_vector_model()
-word_frequency_dict = get_words_frequency_dict()
-
-
-def summarise(title: str, content: str) -> Abstract:
-    if len(title.strip()) <= 0:
-        abstract = '请正确填写文章和标题.'
-        return Abstract(abstract, 0, {abstract: 0})
-    if len(content) < 10:
-        return Abstract(content, 1, {content: 1})
-
-    result = get_abstract(title, content, word_embedding, word_frequency_dict, 5, 0.2)
-    print(result.similarity)
-    print(result.abstract)
-    return result
-
-
 def get_abstract(title: str, content: str, word_embedding: Word2Vec, word_frequency_dict: dict, top_num: int,
                  coefficient: float) -> Abstract:
     if len(title.strip()) <= 0:
@@ -239,7 +223,7 @@ def get_abstract(title: str, content: str, word_embedding: Word2Vec, word_freque
                                                                                       title_content_vector, sentences,
                                                                                       coefficient)
     except Exception:
-        return Abstract(None, None, None)
+        return Abstract()
         # print(most_similar_sens)
     most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
 
@@ -280,6 +264,23 @@ def get_nearby_sentences(distance: int, most_similar_sens: list, sentences: list
     return nearby_sentences
 
 
+def summarise(title: str, content: str) -> Abstract:
+    if len(title.strip()) <= 0:
+        abstract = '请正确填写文章和标题.'
+        return Abstract(abstract, 0, {abstract: 0})
+    if len(content) < 10:
+        return Abstract(content, 1, {content: 1})
+
+    result = get_abstract(title, content, word_embedding, word_frequency_dict, 5, 0.2)
+    print(result.similarity)
+    print(result.abstract)
+    return result
+
+
+word_embedding = load_word_vector_model()
+word_frequency_dict = get_words_frequency_dict()
+
+
 def test():
     with open("data/news.txt", encoding='utf-8') as file:
         lines = file.readlines()
@@ -290,12 +291,5 @@ def test():
         title = "钟南山院士团队联合研发咽拭子采样智能机器人取得阶段性进展"
         result = summarise(title, contents)
         print(result.abstract)
-        # print(result.similarity)
-        # print(result.top_sentences)
 
-# embedding_size = 100
-# coefficient = 0.5
-# top_num = 10
 # test()
-# s = None
-# print(len(s))
