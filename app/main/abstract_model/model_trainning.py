@@ -170,39 +170,38 @@ def get_essays() -> list:
 def find_most_suitable_model():
     coefficient_init = 0.0
     # 获取每个模型的参数
-    models = []
-    # for num in range(50, 500, 50):
-    #     model_name = 'word_embedding_model_' + str(num)
-    num = 100
-    # model_path = './model/' + model_name
-    model_path = './model/wiki_xinwen_wordvector.model'
-    word_embedding = abstract_model.load_word_vector_model(model_path)
-    essays_list = get_essays()
-    word_frequency_dict = abstract_model.get_words_frequency_dict()
-    for top_num in range(5, 10, 1):
-        for coefficient in np.arange(0.2, 1.0, 0.02):
-            similarities = []
-            result = {'word_embedding_feature': num, 'top_num': top_num, 'coefficients': coefficient}
-            random.shuffle(essays_list)
-            for batch_size in range(100, 5000, 100):
-                batch_essays = essays_list[:batch_size]
-                for essay in batch_essays:
-                    abstract = abstract_model.get_abstract(title=essay.title, content=essay.content,
-                                                           word_embedding=word_embedding,
-                                                           word_frequency_dict=word_frequency_dict,
-                                                           top_num=top_num,
-                                                           coefficient=coefficient)
-                    if abstract.similarity is None or np.math.isnan(abstract.similarity):
-                        print(essay.title)
-                        print(essay.content)
-                        continue
-                    similarities.append(abstract.similarity)
-                exception = np.mean(similarities)
-                var = np.var(similarities)
-                result['exceptions'] = exception
-                result['variances'] = var
-                result['batch_size'] = batch_size
-                service.insert_model_training_data(result)
+    for num in range(100, 500, 50):
+        model_name = 'word_embedding_model_' + str(num)
+        # num = 100
+        model_path = './model/' + model_name
+        # model_path = './model/wiki_xinwen_wordvector.model'
+        word_embedding = abstract_model.load_word_vector_model(model_path)
+        essays_list = get_essays()
+        word_frequency_dict = abstract_model.get_words_frequency_dict()
+        for top_num in range(5, 10, 1):
+            for coefficient in np.arange(0.2, 1.0, 0.1):
+                similarities = []
+                result = {'word_embedding_feature': num, 'top_num': top_num, 'coefficients': coefficient}
+                random.shuffle(essays_list)
+                for batch_size in range(1000, 3001, 500):
+                    batch_essays = essays_list[:batch_size]
+                    for essay in batch_essays:
+                        abstract = abstract_model.get_abstract(title=essay.title, content=essay.content,
+                                                               word_embedding=word_embedding,
+                                                               word_frequency_dict=word_frequency_dict,
+                                                               top_num=top_num,
+                                                               coefficient=coefficient)
+                        if abstract.similarity is None or np.math.isnan(abstract.similarity):
+                            print(essay.title)
+                            print(essay.content)
+                            continue
+                        similarities.append(abstract.similarity)
+                    exception = np.mean(similarities)
+                    var = np.var(similarities)
+                    result['exceptions'] = exception
+                    result['variances'] = var
+                    result['batch_size'] = batch_size
+                    service.insert_model_training_data(result)
     return
 
 
