@@ -213,6 +213,13 @@ def get_abstract_result(title: str, content: str) -> Abstract:
     return abstract
 
 
+def get_model_training_data(word_embedding_feature: int):
+    sql = "select coefficients,exceptions,variances from auto_abstract_model where word_embedding_feature=" + str(
+        word_embedding_feature) + " and top_num=8 and batch_size=1000"
+    data = db.query_data(sql)
+    return data
+
+
 if __name__ == '__main__':
     history = {
         "title": "333",
