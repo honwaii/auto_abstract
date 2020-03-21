@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from configparser import ConfigParser
 
-path = "../../configuration.cfg"
+path = "../configuration.cfg"
 
 
 class Configuration:
