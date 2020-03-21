@@ -9,7 +9,6 @@
     FILE :  clean_corpus.py
     FUNCTION : None
 """
-import sys
 import os
 from optparse import OptionParser
 
