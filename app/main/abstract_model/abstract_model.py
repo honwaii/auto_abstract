@@ -210,6 +210,7 @@ def get_content_sentences(contents: str):
     contents = contents.replace("\n", "。").strip()
     contents = contents.replace("\t", "").strip()
     contents = contents.replace("\r", "。").strip()
+    contents = contents.replace(" ", "，").strip()
     contents = re.subn(r'(“.*，.*”)', "", contents)[0]
     contents = re.subn(r'【.+】', "", contents)[0]
     contents = re.subn(r'（.+）', "", contents)[0]
