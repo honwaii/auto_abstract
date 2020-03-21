@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 from gensim.models import word2vec
 from sklearn.manifold import TSNE
 
-from app.main.abstract_service import db
 from app.main.abstract_model import abstract_model
 from app.main.abstract_model.domain.abstract import Abstract
+from app.main.abstract_service import db
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
@@ -136,6 +136,15 @@ def init_wordvecs(word_vector_model_path):  # 初始化词向量模型
     return model
 
 
+def async(f):
+    def wrapper(*args, **kwargs):
+        thr = threading.Thread(target=f, args=args, kwargs=kwargs)
+        thr.start()
+
+    return wrapper
+
+
+@async
 def tsne_plot(query_word, output_path, model, word_num=200):  # 画关于query_word的tsne图，这个query word 会被显示在图中
     # 图会被保存在output_path里面
     "Creates and TSNE model and plots it"
@@ -173,7 +182,10 @@ def tsne_plot(query_word, output_path, model, word_num=200):  # 画关于query_w
         plt.savefig(output_path, dpi=300)
 
 
-def query_similarity(query_word, output_pic_path, model):
+import threading
+
+
+def query_similarity(query_word, output_pic_path):
     """
     根据输入的query_word ，返回一个字符串，字符串包含和这个query_word最相似的10个词以及相似度，
     并且将这个query_word以及随机选取的200个单词用tsne画图，图片保存在output_pic_path里面
@@ -186,8 +198,8 @@ def query_similarity(query_word, output_pic_path, model):
     #     return "You should initialized the word_vector model first by calling init_wordvects"
     # else:
     try:
-        lst = model.most_similar(positive=[query_word], topn=10)
-        tsne_plot(query_word, output_pic_path, model, word_num=200)
+        lst = abstract_model.word_embedding.most_similar(positive=[query_word], topn=10)
+        tsne_plot(query_word, output_pic_path, abstract_model.word_embedding, word_num=200)
     except:
         return False
     # print(dict(lst))
