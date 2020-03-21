@@ -2,21 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import re
-import jieba
-import gensim
-import numpy as np
-
-from typing import List
+import sys
 from functools import reduce
+from typing import List
+
+import gensim
+import jieba
+import numpy as np
 from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
 from scipy.spatial.distance import pdist
 from sklearn.decomposition import PCA
+
 from app.main.abstract_model.domain.abstract import Abstract
 from app.main.abstract_model.domain.sentence import Sentence
 from app.main.abstract_model.domain.word import Word
 from app.main.common.cfg_operator import configuration
-import sys
 
 sys.path.append('E:\\NLPproject\\auto_abstract')
 
@@ -33,7 +34,7 @@ def load_word_vector_model(path=None) -> Word2Vec:
     # 加载word2vec模型: 保存的形式为二进制
     word_embedding = gensim.models.Word2Vec.load(path)
     # 加载glove转换的模型: 保存的为文本形式
-    # model = KeyedVectors.load_word2vec_format(word_vector_model_path)
+    # word_embedding = KeyedVectors.load_word2vec_format(path)
     return word_embedding
 
 
@@ -109,6 +110,8 @@ def get_all_sentences(sentences: list, feature_size: int, word_vector_model: Wor
     sentence_list = []
     for sentence in sentences:
         sentence = jieba.cut(sentence)
+        if len(str(sentence)) < 1:
+            continue
         word_list = []
         for word in sentence:
             vector = get_word_vector(word, feature_size, word_vector_model)
@@ -162,17 +165,32 @@ def get_content_vector(contents: list, word_embedding: Word2Vec, word_frequency_
 def get_most_similar_sentences(top_num: int, sentence_vector_lookup: dict, title_content_vector, sentences: list,
                                coefficient: float):
     similar_sentences = {}
+    m = len(sentence_vector_lookup)
+    essay_vector = 1.0 / m * (coefficient * title_content_vector[0] + (1 - coefficient) * title_content_vector[1])
     for sen, vector in sentence_vector_lookup.items():
         # weighted_vector = get_knn_vector(sen, distance, sentence_vector_lookup, sentences)
-        essay_vector = coefficient * title_content_vector[0] + (1 - coefficient) * title_content_vector[1]
         similarity = cosine(vector, essay_vector)
+        if similarity is None or np.math.isnan(similarity):
+            continue
         similar_sentences[sen] = similarity
     sorted_list = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])
     most_similar_sens = sorted_list[:top_num]
 
+    # 获取这些相似句子相邻的句子
+    nearby_sens = []
+    for each in most_similar_sens:
+        index = sentences.index(each)
+        if index < 1:
+            continue
+        last_sen = sentences[index - 1]
+        nearby_sens.append(last_sen)
+        delta = (similar_sentences[each] - similar_sentences[last_sen]) / 2
+        similar_sentences[last_sen] -= delta
+    final_sens = sorted(similar_sentences, key=lambda sen: similar_sentences[sen])[:top_num]
+
     indexes = []
     top_sentences_with_similarity = {}
-    for each in most_similar_sens:
+    for each in final_sens:
         indexes.append(sentences.index(each))
         top_sentences_with_similarity[each] = 1 - similar_sentences[each]
     indexes = sorted(indexes)
@@ -189,10 +207,13 @@ def cosine(vec1, vec2):
 
 
 def get_content_sentences(contents: str):
-    contents = contents.replace("\n", "").strip()
+    contents = contents.replace("\n", "。").strip()
     contents = contents.replace("\t", "").strip()
-    contents = contents.replace("\r", "").strip()
-    regex = r"[？！。?!【】,，;；……]"
+    contents = contents.replace("\r", "。").strip()
+    contents = re.subn(r'(“.*，.*”)', "", contents)[0]
+    contents = re.subn(r'【.+】', "", contents)[0]
+    contents = re.subn(r'（.+）', "", contents)[0]
+    regex = r"[？！。?!【】;；，,:：…… ]"
     sentences_list = re.split(regex, contents)
     sentences = []
     for index in range(len(sentences_list)):
@@ -225,7 +246,7 @@ def get_abstract(title: str, content: str, word_embedding: Word2Vec, word_freque
     except Exception:
         return Abstract()
         # print(most_similar_sens)
-    most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
+    # most_similar_sens = get_nearby_sentences(1, most_similar_sens, sentences)
 
     result_similarity = 0
     if len(most_similar_sens) > 0:
@@ -271,7 +292,7 @@ def summarise(title: str, content: str) -> Abstract:
     if len(content) < 10:
         return Abstract(content, 1, {content: 1})
 
-    result = get_abstract(title, content, word_embedding, word_frequency_dict, 5, 0.2)
+    result = get_abstract(title, content, word_embedding, word_frequency_dict, 8, 0.2)
     print(result.similarity)
     print(result.abstract)
     return result
@@ -292,4 +313,8 @@ def test():
         result = summarise(title, contents)
         print(result.abstract)
 
+
 # test()
+s = '“我们用康复者特异血浆临床治疗11例危重病人，治疗效果显著。”'
+s = re.subn(r"(“.*，.*”)", "", s)[0]
+print(s)
