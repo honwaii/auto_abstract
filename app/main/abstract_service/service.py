@@ -136,7 +136,7 @@ def init_wordvecs(word_vector_model_path):  # 初始化词向量模型
     return model
 
 
-def async(f):
+def async1(f):
     def wrapper(*args, **kwargs):
         thr = threading.Thread(target=f, args=args, kwargs=kwargs)
         thr.start()
@@ -144,7 +144,7 @@ def async(f):
     return wrapper
 
 
-@async
+@async1
 def tsne_plot(query_word, output_path, model, word_num=200):  # 画关于query_word的tsne图，这个query word 会被显示在图中
     # 图会被保存在output_path里面
     "Creates and TSNE model and plots it"
