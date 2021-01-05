@@ -108,3 +108,4 @@ venv.bak/
 .vscode/
 
 app/main/abstract_model/model/
+.idea
